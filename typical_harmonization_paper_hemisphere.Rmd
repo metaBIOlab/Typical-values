@@ -312,13 +312,6 @@ m.lstk <- as_tibble(m.lstk)
 
 tableT <- full_join(mean, m.lstk, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "T")
 
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
-
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
@@ -482,13 +475,6 @@ m.lstk <- as_tibble(m.lstk)
 
 tableGI <- full_join(mean, m.lstk, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "GI")
 
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
-
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
@@ -516,7 +502,6 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
 
 ```
 
-
 ## K \~ Age
 
 ```{r cache=TRUE}
@@ -536,12 +521,6 @@ mean <- as_tibble(mean)
 m.lstk <- as_tibble(m.lstk)
 
 tableK <- full_join(mean, m.lstk, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "K")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ) 
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -579,7 +558,6 @@ ggplot(filter(re, grpvar == "Sample"), aes(y = condval, x = as.character(grp))) 
 
 ```
 
-
 ## S \~ Age
 
 ```{r cache=TRUE}
@@ -597,12 +575,6 @@ mean <- as_tibble(mean)
 m.lstk <- as_tibble(m.lstk)
 
 tableS <- full_join(mean, m.lstk, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "S")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -648,12 +620,6 @@ mean <- as_tibble(mean)
 m.lstk <- as_tibble(m.lstk)
 
 tableI <- full_join(mean, m.lstk, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "I")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -710,7 +676,6 @@ rate %>%
 data_rate <-
   filter(data, Diagnostic == "CTL")
 
-#data_rate$Diagnostic <- factor(data_rate$Diagnostic, levels = c("CTL", "MCI","AD"))
 data_rate$Sample <-
   as.factor(data_rate$Sample)
 data_rate$ROI <-
@@ -1085,11 +1050,6 @@ m.lstk <- as_tibble(m.lstk)
      TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableT <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "T_shiftc")
- 
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
 
 m.lstk %>% kable() %>% kable_styling()
 
@@ -1155,13 +1115,6 @@ lst <- m.lstk %>% mutate(
 
 tableGI <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "localGI_shiftc")
 
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
-
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
@@ -1213,12 +1166,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableK <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "K_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ) 
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -1283,12 +1230,6 @@ lst <- m.lstk %>% mutate(
 
 tableS <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "S_shiftc")
 
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# m.lstk %>% kable() %>% kable_styling()
-
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
@@ -1352,12 +1293,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableI <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "I_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, TX, CI)) %>% full_join(N_SUBJ)
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
