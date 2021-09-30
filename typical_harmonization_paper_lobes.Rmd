@@ -16,6 +16,8 @@ knitr::opts_chunk$set(cache=TRUE)
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/GitHub/Typical-values")
+
+set.seed(1)
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, include=FALSE}
@@ -151,161 +153,6 @@ filter(data, ROI == "hemisphere") %>%
 ) %>% kable(digits = 2) %>% kable_styling()
 ```
 
-# Mapping
-
-## CTL
-
-```{r}
-amostra_Coef <- filter(data, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval) %>%
-    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(data, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "logExposedArea")
-
-amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
-
-cor.test(amostra_Coef$estimate, amostra_Coef$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, Age_intervalnumber > 1)$estimate, filter(amostra_Coef, Age_intervalnumber > 1)$Age_intervalnumber)
-
-ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
-  labs(y ="Slope", x = "Age interval") +
-  geom_text(aes(label = N), nudge_y = 0.3)
-
-amostra_Coef %>%
-  dplyr::select(-c(term)) %>%
-  kable() %>%
-  kable_styling()
-
-ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval), aes(y = K, x = Age_interval)) +
-    geom_boxplot() + 
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) 
-```
-
-```{r}
-amostra_Coef <- filter(data, ROI != "hemisphere",Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(ROI, Age_interval) %>%
-    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(data, ROI != "hemisphere",Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(ROI, Age_interval) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>%
-  filter(term == "logExposedArea")
-
-ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
-  facet_wrap(ROI ~ .)
-
-ggplot(filter(data, ROI != "hemisphere",Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval), aes(y = K, x = Age_interval)) +
-    geom_boxplot() + 
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
-  facet_wrap(ROI ~ .)
-
-```
-
-```{r}
-amostra_Coef <- filter(data, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval, Diagnostic) %>%
-    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(data, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval, Diagnostic) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>%
-  filter(term == "logExposedArea")
-
-amostra_Coef$Diagnostic <- factor(amostra_Coef$Diagnostic, levels=c('AD', 'CTL'))
-
-ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = Diagnostic)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-    ) +
-  labs(y ="Slope", x = "Age interval") +
-  geom_text(aes(label = N), nudge_y = 0.3)
-
-amostra_Coef %>%
-  dplyr::select(-c(term)) %>%
-  kable() %>%
-  kable_styling()
-
-```
-
-```{r mapping}
-paste("Total number of CTL subjects =", n_distinct(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
-paste("Age range CTL. Min age = ", min(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age), "; max age = ", max(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age))
-
-figS6a <- ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
-       aes(x = Age , y = K)) +
-  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
-  geom_smooth(color = "black", method = "lm") +
-  theme_pubr() +
-  guides(alpha = "none")+ 
-  labs(x = "Age [years]")
-
-figS6b <- ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
-       aes(x = Age, y = S)) +
-  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
-  geom_smooth(color = "black", method = "lm") +
-  theme_pubr() +
-  guides(alpha = "none", color = "none",fill = "none")+ 
-  labs(x = "Age [years]") +
-  theme(legend.position= "none")
-
-figS6c <- ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
-             aes(x = Age, y = I)) + geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) + 
-  geom_smooth(color = "black", method = "lm") +
-  theme_pubr() +
-  guides(alpha = "none", color = "none",fill = "none") + 
-  labs(x = "Age [years]") +
-  theme(legend.position= "none")
-
-figS6 <- ggarrange(figS6a, ggarrange(figS6b, figS6c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
-
-figS6
-
-cor.test(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$K, filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age)
-
-cor.test(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$S, filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age)
-
-cor.test(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$I, filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age)
-```
-
-
-# LOBES
-
 ```{r echo=FALSE}
 data_lobes <- filter(data, ROI != "hemisphere", Diagnostic == "CTL" | Diagnostic == "MCI"| Diagnostic == "AD")
 data_lobes$Diagnostic <- factor(data_lobes$Diagnostic, levels = c("CTL", "MCI","AD"))
@@ -314,30 +161,12 @@ data_lobes$Sample <- as.factor(data_lobes$Sample)
 N_SUBJ <- data_lobes %>% group_by(Diagnostic, ROI) %>% summarise(N_SUBJ = n_distinct(SUBJ))
 ```
 
+# LOBES
+
 ### AvgThickness \~ Age
-
-```{r}
-ggplot(data_lobes, aes(x = Age, y = AvgThickness, color = Sample)) + 
-  geom_point() + 
-  theme_pubr() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) + 
-  facet_grid(ROI ~.)
-```
-
-```{r}
-ggplot(data_lobes, aes(x = Age, y = K, color = Sample)) + 
-  geom_point() + 
-  theme_pubr() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) + 
-  facet_grid(ROI ~.)
-```
 
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(AvgThickness ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(AvgThickness ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -354,13 +183,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableT <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "T")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 pairs <- as_tibble(pairs) %>%
   mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
@@ -414,58 +236,26 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
 
 re <- as_tibble(ranef(m.1))
 
-ggplot(filter(re, grpvar == "Sample:ROI"), aes(y = condval, x = as.character(grp))) +
-   geom_errorbar(aes(ymin = condval+1.96*condsd, ymax = condval-1.96*condsd), width = 0.2) +
-   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
-   theme_pubr() + 
-   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-   ) +
-  labs(y ="T variation", x = "Sample")
+re <- filter(re, grpvar == "Sample:ROI") %>%
+  mutate(ROI = str_sub(grp, -1, 20), T_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1], Diagnostic = str_split(grp, pattern = ":", simplify = TRUE)[,2], SD_T_shift = condsd) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
 
-# re <- filter(re, grpvar == "Sample:ROI") %>%
-#   mutate(ROI = str_sub(grp, -1, 20), T_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1]) %>%
-#   dplyr::select(-c(condval, grpvar, term, condsd, grp))
+ggplot(re, aes(y = T_shift, x = Sample)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = T_shift+1.96*SD_T_shift, ymax = T_shift-1.96*SD_T_shift), width = 0.2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+  ) +
+  labs(y ="T variation", x = "Sample") +
+  facet_grid(ROI ~. )
 
-# data_lobes <- full_join(data_lobes, re) %>% mutate(AvgThickness_shiftc = AvgThickness - T_shift)
 ```
-
-### TotalArea \~ Age
-
-```{r eval=FALSE, include=FALSE}
-m.1 <- lme4::lmer(TotalArea ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-re <- as_tibble(ranef(m.1))
-
-# re <- filter(re, grpvar == "Sample:ROI") %>%
-#   mutate(ROI = str_sub(grp, -1, 20), AT_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1]) %>%
-#   dplyr::select(-c(condval, grpvar, term, condsd, grp))
-
-# data_lobes <- full_join(data_lobes, re) %>% mutate(TotalArea_shiftc = TotalArea - AT_shift)
-```
-
-### ExposedArea \~ Age
-
-```{r eval=FALSE, include=FALSE}
-m.1 <- lme4::lmer(ExposedArea ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-re <- as_tibble(ranef(m.1))
-
-# re <- filter(re, grpvar == "Sample:ROI") %>%
-#   mutate(ROI = str_sub(grp, -1, 20), AE_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1]) %>%
-#   dplyr::select(-c(condval, grpvar, term, condsd, grp))
-
-# data_lobes <- full_join(data_lobes, re) %>% mutate(ExposedArea_shiftc = ExposedArea - AE_shift)
-```
-
 
 ### GI \~ Age
 
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(localGI ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(localGI ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -482,13 +272,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableT <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "GI")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 pairs <- as_tibble(pairs) %>%
   mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
@@ -542,27 +325,25 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
 
 re <- as_tibble(ranef(m.1))
 
-ggplot(filter(re, grpvar == "Sample:ROI"), aes(y = condval, x = as.character(grp))) +
-   geom_errorbar(aes(ymin = condval+1.96*condsd, ymax = condval-1.96*condsd), width = 0.2) +
-   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
-   theme_pubr() + 
-   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-   ) +
-  labs(y ="GI variation", x = "Sample")
+re <- filter(re, grpvar == "Sample:ROI") %>%
+  mutate(ROI = str_sub(grp, -1, 20), GI_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1], Diagnostic = str_split(grp, pattern = ":", simplify = TRUE)[,2], SD_GI_shift = condsd) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
 
-# re <- filter(re, grpvar == "Sample:ROI") %>%
-#   mutate(ROI = str_sub(grp, -1, 20), GI_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1]) %>%
-#   dplyr::select(-c(condval, grpvar, term, condsd, grp))
+ggplot(re, aes(y = GI_shift, x = Sample)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = GI_shift+1.96*SD_GI_shift, ymax = GI_shift-1.96*SD_GI_shift), width = 0.2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+  ) +
+  labs(y ="GI variation", x = "Sample") +
+  facet_grid(ROI ~. )
 
 ```
 
 ### K \~ Age
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(K ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(K ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -579,13 +360,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableK <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "K")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 pairs <- as_tibble(pairs) %>%
   mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
@@ -653,17 +427,12 @@ ggplot(re, aes(y = K_shift, x = Sample)) +
   labs(y ="K variation", x = "Sample") +
   facet_grid(ROI ~. )
 
-# data_lobes <- full_join(data_lobes, re) %>% mutate(K_shiftc = K - K_shift)
 ```
 
 ### S \~ Age
 
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(S ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(S ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -680,13 +449,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableS <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "S")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -736,23 +498,12 @@ e <- as.data.frame(e)
 
 fit_S_lobes <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "S", shape = "Diagnostic") + facet_wrap(. ~ ROI)
 
-re <- as_tibble(ranef(m.1))
-
-# re <- filter(re, grpvar == "Sample:ROI") %>%
-#   mutate(ROI = str_sub(grp, -1, 20), S_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1]) %>%
-#   dplyr::select(-c(condval, grpvar, term, condsd, grp))
-
-# data_lobes <- full_join(data_lobes, re) %>% mutate(S_shiftc = S - S_shift)
 ```
 
 ### I \~ Age
 
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(I ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(I ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -769,13 +520,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableI <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "I")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -825,13 +569,6 @@ e <- as.data.frame(e)
 
 fit_I_lobes <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "I", shape = "Diagnostic") + facet_wrap(. ~ ROI)
 
-# re <- as_tibble(ranef(m.1))
-# 
-# re <- filter(re, grpvar == "Sample:ROI") %>%
-#   mutate(ROI = str_sub(grp, -1, 20), I_shift = condval, Sample = str_split(grp, pattern = ":", simplify = TRUE)[,1]) %>%
-#   dplyr::select(-c(condval, grpvar, term, condsd, grp))
-
-# data_lobes <- full_join(data_lobes, re) %>% mutate(I_shiftc = I - I_shift)
 ```
 
 ```{r echo=FALSE}
@@ -850,7 +587,6 @@ rate <- full_join(tableT, tableK) %>% full_join(tableS) %>% full_join(tableI) %>
 data_rate <-
   filter(data, Diagnostic == "CTL")
 
-#data_rate$Diagnostic <- factor(data_rate$Diagnostic, levels = c("CTL", "MCI","AD"))
 data_rate$Sample <-
   as.factor(data_rate$Sample)
 data_rate$ROI <-
@@ -977,7 +713,6 @@ data <- data %>%
 
 ```
 
-
 # Harmonization figures
 ```{r include=FALSE}
 GI_shifta_lobes <- ggplot(filter(data, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = localGI, color = Sample))+
@@ -989,7 +724,6 @@ GI_shiftb_lobes <- ggplot(filter(data, ROI != "hemisphere", Diagnostic == "CTL")
   geom_point() +
   theme_pubr() + labs(y = "GI (harmonized)") +
   facet_grid(ROI ~ .)
-
 
 GI_shift_lobes <- ggarrange(GI_shifta_lobes, GI_shiftb_lobes,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
 GI_shift_lobes
@@ -1025,7 +759,6 @@ S_shiftb_lobes <- ggplot(filter(data, ROI != "hemisphere", Diagnostic == "CTL"),
   theme_pubr() + labs(y = "S (harmonized)") +
   facet_grid(ROI ~ .)
 
-
 S_shift_lobes <- ggarrange(S_shifta_lobes, S_shiftb_lobes,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
 S_shift_lobes
 
@@ -1055,81 +788,10 @@ data_lobes$Sample <- as.factor(data_lobes$Sample)
 ```
 
 # After harmonization
-```{r}
-ggplot(data_lobes, aes(x = Age, y = AvgThickness_shiftc, color = Sample)) + 
-  geom_point() + 
-  theme_pubr() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) + 
-  facet_grid(ROI ~.)
-```
 
-```{r}
-ggplot(data_lobes, aes(x = Age, y = K_shiftc, color = Sample)) + 
-  geom_point() + 
-  theme_pubr() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) + 
-  facet_grid(ROI ~.)
-```
-
-```{r}
-amostra_Coef <- filter(data_lobes, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(ROI, Age_interval) %>%
-    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(data_lobes, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
-
-amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
-
-cor.test(filter(amostra_Coef, ROI == "F")$estimate, filter(amostra_Coef, ROI == "F")$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "O")$estimate, filter(amostra_Coef, ROI == "O")$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "P")$estimate, filter(amostra_Coef, ROI == "P")$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "T")$estimate, filter(amostra_Coef, ROI == "T")$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "F", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "F", Age_intervalnumber > 1)$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "O", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "O", Age_intervalnumber > 1)$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "P", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "P", Age_intervalnumber > 1)$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, ROI == "T", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "T", Age_intervalnumber > 1)$Age_intervalnumber)
-
-fig_slope_lobes_ageinterval <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_line(group = 1) + 
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-    ) + labs(y ="Slope (after harmonization)", x = "Age interval")+facet_wrap(ROI ~. )
-
-fig_slope_lobes_ageinterval
-
-ggplot(filter(data_lobes, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K_shiftc, x = Age_interval), aes(y = K, x = Age_interval)) +
-    geom_boxplot() + 
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-    ) + labs(y ="K (after harmonization)", x = "Age interval") + facet_wrap(ROI ~. )
-
-```
-
-### AvgThickness \~ Age
+## AvgThickness \~ Age
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(AvgThickness_shiftc ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic)+(1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(AvgThickness_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -1146,13 +808,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableT <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "T_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 pairs <- as_tibble(pairs) %>%
   mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
@@ -1207,13 +862,9 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
 ```
 
 
-### GI \~ Age
+## GI \~ Age
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(localGI_shiftc ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic)+(1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(localGI_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -1230,13 +881,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableGI <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "localGI_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 pairs <- as_tibble(pairs) %>%
   mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
@@ -1290,13 +934,9 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
 
 ```
 
-### K \~ Age
+## K \~ Age
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(K_shiftc ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(K_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -1313,13 +953,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableK <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "K_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 pairs <- as_tibble(pairs) %>%
   mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
@@ -1375,14 +1008,10 @@ fit_K_lobes
 
 ```
 
-### S \~ Age
+## S \~ Age
 
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(S_shiftc ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(S_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -1399,13 +1028,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableS <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "S_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -1459,14 +1081,10 @@ fit_S_lobes
 
 ```
 
-### I \~ Age
+## I \~ Age
 
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(I_shiftc ~ Age * Diagnostic * ROI + (1|Sample) + (1|Sample:Diagnostic) + (1|Sample:ROI), data = data_lobes)
-
-# m.1 <- lme4::lmer(I_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = data_lobes)
-
-# performance::check_model(m.1)
 
 anova(m.1)
 sigma.hat(m.1)
@@ -1483,13 +1101,6 @@ lst <- m.lstk %>% mutate(
     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
 
 tableI <- full_join(mean, lst, by = c("Diagnostic", "ROI")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "I_shiftc")
-
-# m.lstk %>% mutate(
-#     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)),
-#     CI = paste(signif(asymp.LCL, 2), ";", signif(asymp.UCL, 2)),
-#   ) %>% dplyr::select(c(Diagnostic, ROI, TX, CI)) %>% full_join(N_SUBJ)
-# 
-# m.lstk %>% kable() %>% kable_styling()
 
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
@@ -1559,7 +1170,6 @@ rate <- full_join(tableT, tableK) %>%
   kable() %>%
   kable_styling()
 
-# write.csv(rate, "rate_lobes_c.csv")
 ```
 
 ## Figures

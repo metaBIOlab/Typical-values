@@ -16,6 +16,8 @@ knitr::opts_chunk$set(cache=TRUE)
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 setwd("~/GitHub/Typical-values")
+
+set.seed(1)
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, include=FALSE}
@@ -203,38 +205,6 @@ ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[
     geom_boxplot() + 
     theme_pubr() + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) 
-```
-
-```{r}
-amostra_Coef <- filter(data, ROI != "hemisphere",Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(ROI, Age_interval) %>%
-    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(data, ROI != "hemisphere",Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(ROI, Age_interval) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>%
-  filter(term == "logExposedArea")
-
-ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
-  facet_wrap(ROI ~ .)
-
-ggplot(filter(data, ROI != "hemisphere",Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval), aes(y = K, x = Age_interval)) +
-    geom_boxplot() + 
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
-  facet_wrap(ROI ~ .)
-
 ```
 
 ```{r}
