@@ -207,41 +207,6 @@ ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) 
 ```
 
-```{r}
-amostra_Coef <- filter(data, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval, Diagnostic) %>%
-    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(data, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval, Diagnostic) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>%
-  filter(term == "logExposedArea")
-
-amostra_Coef$Diagnostic <- factor(amostra_Coef$Diagnostic, levels=c('AD', 'CTL'))
-
-ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = Diagnostic)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-    ) +
-  labs(y ="Slope", x = "Age interval") +
-  geom_text(aes(label = N), nudge_y = 0.3)
-
-amostra_Coef %>%
-  dplyr::select(-c(term)) %>%
-  kable() %>%
-  kable_styling()
-
-```
-
 ```{r mapping}
 paste("Total number of CTL subjects =", n_distinct(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
 paste("Age range CTL. Min age = ", min(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age), "; max age = ", max(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age))
@@ -280,6 +245,43 @@ cor.test(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$K, filter(data, 
 cor.test(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$S, filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age)
 
 cor.test(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$I, filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+## CTL vs AD
+
+```{r}
+amostra_Coef <- filter(data, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(data, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>%
+  filter(term == "logExposedArea")
+
+amostra_Coef$Diagnostic <- factor(amostra_Coef$Diagnostic, levels=c('AD', 'CTL'))
+
+ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = Diagnostic)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() +
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    ) +
+  labs(y ="Slope", x = "Age interval") +
+  geom_text(aes(label = N), nudge_y = 0.3)
+
+amostra_Coef %>%
+  dplyr::select(-c(term)) %>%
+  kable() %>%
+  kable_styling()
+
 ```
 
 # HEMISPHERES

@@ -39,7 +39,7 @@ library(effects);
 ```
 
 ```{r data import}
-data <- read_csv("~/GitHub/Typical-values/data_typical_values.csv")
+data <- read_csv("~/GitHub/Typical-values/data_typical_values2.csv")
 ```
 
 
@@ -59,7 +59,6 @@ data <- data %>%
   Knorm = K/sqrt(1 + (1/4)^2 + (5/4)^2),
   Snorm = S/sqrt((3/2)^2 + (3/4)^2 + (9/4)^2),
   Inorm = I/sqrt(1^2 + 1^2 + 1^2),
-  c = as.double(ifelse(ROI == "hemisphere", NA, 4 * pi/GaussianCurvature)),
   TotalArea_corrected = ifelse(ROI == "hemisphere", TotalArea, TotalArea * c),
   ExposedArea_corrected = ifelse(ROI == "hemisphere", ExposedArea, ExposedArea * c),
   logTotalArea_corrected = log10(TotalArea_corrected),
@@ -110,7 +109,7 @@ data$Age_interval10 <- cut(data$Age,
 We included multiple datasets from different sites to estimate, accounting methodological and "subject" biases, typical values for K, S and I.
 
 ```{r description, echo=FALSE}
-filter(data, ROI == "hemisphere") %>%
+filter(data, ROI != "hemisphere") %>%
   group_by(Diagnostic) %>%
   summarise(
     N = n_distinct(SUBJ),
@@ -118,13 +117,13 @@ filter(data, ROI == "hemisphere") %>%
     age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
 ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data, ROI == "hemisphere") %>%
+filter(data, ROI != "hemisphere") %>%
   group_by(Diagnostic, Gender) %>%
   summarise(
     N = n_distinct(SUBJ)
 ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data, ROI == "hemisphere") %>%
+filter(data, ROI != "hemisphere") %>%
   summarise(
     N = n_distinct(SUBJ),
     age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
@@ -132,8 +131,8 @@ filter(data, ROI == "hemisphere") %>%
 ) %>% kable(digits = 2) %>% kable_styling()
 
 filter(data,
-       ROI == "hemisphere") %>%
-  group_by(Sample, Diagnostic) %>%
+       ROI != "hemisphere") %>%
+  group_by(Sample, Diagnostic, ROI) %>%
   summarise(
     N = n_distinct(SUBJ),
     age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
@@ -146,7 +145,7 @@ filter(data,
     I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
   ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data, ROI == "hemisphere") %>%
+filter(data, ROI != "hemisphere") %>%
   group_by(Sample, Diagnostic, Gender) %>%
   summarise(
     N = n_distinct(SUBJ)
@@ -160,6 +159,142 @@ data_lobes$Sample <- as.factor(data_lobes$Sample)
 
 N_SUBJ <- data_lobes %>% group_by(Diagnostic, ROI) %>% summarise(N_SUBJ = n_distinct(SUBJ))
 ```
+
+# Mapping
+
+## CTL
+
+```{r}
+amostra_Coef <- filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea_corrected ~ logExposedArea_corrected, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "logExposedArea")
+
+amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
+
+cor.test(amostra_Coef$estimate, amostra_Coef$Age_intervalnumber)
+
+cor.test(filter(amostra_Coef, Age_intervalnumber > 1)$estimate, filter(amostra_Coef, Age_intervalnumber > 1)$Age_intervalnumber)
+
+ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() +
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
+  labs(y ="Slope", x = "Age interval") +
+  geom_text(aes(label = N), nudge_y = 0.3) +
+  facet_grid(ROI ~ .)
+
+amostra_Coef %>%
+  dplyr::select(-c(term)) %>%
+  kable() %>%
+  kable_styling()
+
+ggplot(filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval), aes(y = K, x = Age_interval)) +
+    geom_boxplot() + 
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
+  facet_grid(ROI ~ .)
+```
+
+```{r mapping}
+paste("Total number of CTL subjects =", n_distinct(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
+paste("Age range CTL. Min age = ", min(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age), "; max age = ", max(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age))
+
+ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age , y = K)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = "none")+ 
+  labs(x = "Age [years]") +
+  facet_grid(ROI~.)
+
+filter(data_lobes, Diagnostic == "CTL") %>%
+  group_by(ROI) %>%
+  summarize(COR=cor(K, Age),
+            p = cor.test(K, Age)$p.value)
+
+ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = S)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = "none", color = "none",fill = "none")+ 
+  labs(x = "Age [years]") +
+  theme(legend.position= "none") +
+  facet_grid(ROI~.)
+
+filter(data_lobes, Diagnostic == "CTL") %>%
+  group_by(ROI) %>%
+  summarize(COR=cor(S, Age),
+            p = cor.test(S, Age)$p.value)
+
+ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
+             aes(x = Age, y = I)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) + 
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = "none", color = "none",fill = "none") + 
+  labs(x = "Age [years]") +
+  theme(legend.position= "none") +
+  facet_grid(ROI~.)
+
+filter(data_lobes, Diagnostic == "CTL") %>%
+  group_by(ROI) %>%
+  summarize(COR=cor(I, Age),
+            p = cor.test(I, Age)$p.value)
+```
+
+## CTL vs AD
+
+```{r}
+amostra_Coef <- filter(data_lobes, Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(data_lobes, Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>%
+  filter(term == "logExposedArea")
+
+amostra_Coef$Diagnostic <- factor(amostra_Coef$Diagnostic, levels=c('AD', 'CTL'))
+
+ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = Diagnostic)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() +
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    ) +
+  labs(y ="Slope", x = "Age interval") +
+  geom_text(aes(label = N), nudge_y = 0.3) +
+  facet_grid(ROI ~ .)
+
+amostra_Coef %>%
+  dplyr::select(-c(term)) %>%
+  kable() %>%
+  kable_styling()
+
+```
+
+
 
 # LOBES
 
