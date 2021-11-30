@@ -8,7 +8,12 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
 knitr::opts_chunk$set(message=FALSE)
 knitr::opts_chunk$set(warning=FALSE)
 knitr::opts_chunk$set(cache=TRUE)
@@ -41,7 +46,6 @@ library(effects);
 ```{r data import}
 data <- read_csv("~/GitHub/Typical-values/data_typical_values.csv")
 ```
-
 
 ```{r data prep}
 Age.cor = 25
@@ -104,12 +108,20 @@ data$Age_interval10 <- cut(data$Age,
                                        include.lowest = TRUE)
 ```
 
+```{r echo=FALSE}
+data_lobes <- filter(data, ROI != "hemisphere", Diagnostic == "CTL" | Diagnostic == "MCI"| Diagnostic == "AD")
+data_lobes$Diagnostic <- factor(data_lobes$Diagnostic, levels = c("CTL", "MCI","AD"))
+data_lobes$Sample <- as.factor(data_lobes$Sample)
+
+N_SUBJ <- data_lobes %>% group_by(Diagnostic, ROI) %>% summarise(N_SUBJ = n_distinct(SUBJ))
+```
+
 # Datasets description
 
 We included multiple datasets from different sites to estimate, accounting methodological and "subject" biases, typical values for K, S and I.
 
 ```{r description, echo=FALSE}
-filter(data, ROI != "hemisphere") %>%
+data_lobes %>%
   group_by(Diagnostic) %>%
   summarise(
     N = n_distinct(SUBJ),
@@ -117,21 +129,20 @@ filter(data, ROI != "hemisphere") %>%
     age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
 ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data, ROI != "hemisphere") %>%
+data_lobes %>%
   group_by(Diagnostic, Gender) %>%
   summarise(
     N = n_distinct(SUBJ)
 ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data, ROI != "hemisphere") %>%
+data_lobes %>%
   summarise(
     N = n_distinct(SUBJ),
     age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
     age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
 ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data,
-       ROI != "hemisphere") %>%
+data_lobes %>%
   group_by(Sample, Diagnostic, ROI) %>%
   summarise(
     N = n_distinct(SUBJ),
@@ -145,30 +156,30 @@ filter(data,
     I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
   ) %>% kable(digits = 2) %>% kable_styling()
 
-filter(data, ROI != "hemisphere") %>%
+data_lobes %>%
   group_by(Sample, Diagnostic, Gender) %>%
   summarise(
     N = n_distinct(SUBJ)
 ) %>% kable(digits = 2) %>% kable_styling()
 ```
 
-```{r echo=FALSE}
-data_lobes <- filter(data, ROI != "hemisphere", Diagnostic == "CTL" | Diagnostic == "MCI"| Diagnostic == "AD")
-data_lobes$Diagnostic <- factor(data_lobes$Diagnostic, levels = c("CTL", "MCI","AD"))
-data_lobes$Sample <- as.factor(data_lobes$Sample)
-
-N_SUBJ <- data_lobes %>% group_by(Diagnostic, ROI) %>% summarise(N_SUBJ = n_distinct(SUBJ))
-```
-
 # Mapping
+
+# correction factor lobes
+
+```{r echo=FALSE}
+ggplot(filter(data, ROI != "hemisphere"), aes(x = ROI, y = c, color = Sample)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_pubr()
+```
 
 ## CTL
 
 ```{r}
 amostra_Coef <- filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
     group_by(Age_interval, ROI) %>%
-    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea_corrected ~ logExposedArea_corrected, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
+    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea_corrected ~ logExposedArea_corrected, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% unnest(fit_amostra)
 
 amostras_Coef_age <- filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
     group_by(Age_interval) %>%
@@ -189,12 +200,12 @@ ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
   geom_text(aes(label = N), nudge_y = 0.3) +
   facet_grid(ROI ~ .)
 
-amostra_Coef %>%
-  dplyr::select(-c(term)) %>%
-  kable() %>%
-  kable_styling()
+# amostra_Coef %>%
+  # dplyr::select(-c(term)) %>%
+  # kable() %>%
+  # kable_styling()
 
-ggplot(filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval), aes(y = K, x = Age_interval)) +
+ggplot(filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval)) +
     geom_boxplot() + 
     theme_pubr() + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
@@ -212,17 +223,16 @@ amostra_Coef <- filter(data_lobes, Diagnostic == "CTL", Age_interval != "[0,5)",
 ggplot(filter(amostra_Coef, term == "logExposedArea_corrected"), aes(x = estimate, alpha = 0.3)) +
     geom_histogram() +
   geom_vline(xintercept = 1.25, linetype = "dashed") +
+    geom_vline(aes(xintercept = mean(estimate))) +
     theme_pubr() + 
+  guides(alpha = "none") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) +
   labs(x ="Slope", x = "Age interval")
 ```
 
 
 ```{r mapping}
-paste("Total number of CTL subjects =", n_distinct(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
-paste("Age range CTL. Min age = ", min(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age), "; max age = ", max(filter(data, ROI == "hemisphere", Diagnostic == "CTL")$Age))
-
-ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
+ggplot(filter(data, ROI != "hemisphere", Diagnostic == "CTL"),
        aes(x = Age , y = K)) +
   geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
   geom_smooth(color = "black", method = "lm") +
@@ -236,7 +246,7 @@ filter(data_lobes, Diagnostic == "CTL") %>%
   summarize(COR=cor(K, Age),
             p = cor.test(K, Age)$p.value)
 
-ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
+ggplot(filter(data, ROI != "hemisphere", Diagnostic == "CTL"),
        aes(x = Age, y = S)) +
   geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
   geom_smooth(color = "black", method = "lm") +
@@ -251,7 +261,7 @@ filter(data_lobes, Diagnostic == "CTL") %>%
   summarize(COR=cor(S, Age),
             p = cor.test(S, Age)$p.value)
 
-ggplot(filter(data, ROI == "hemisphere", Diagnostic == "CTL"),
+ggplot(filter(data, ROI != "hemisphere", Diagnostic == "CTL"),
              aes(x = Age, y = I)) +
   geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) + 
   geom_smooth(color = "black", method = "lm") +
@@ -271,7 +281,7 @@ filter(data_lobes, Diagnostic == "CTL") %>%
 
 ```{r}
 amostra_Coef <- filter(data_lobes, Diagnostic == "CTL" | Diagnostic == "AD", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval, Diagnostic) %>%
+    group_by(Age_interval, Diagnostic, ROI) %>%
     do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
     unnest(fit_amostra)
 
@@ -298,14 +308,12 @@ ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = Diagnostic)) +
   geom_text(aes(label = N), nudge_y = 0.3) +
   facet_grid(ROI ~ .)
 
-amostra_Coef %>%
-  dplyr::select(-c(term)) %>%
-  kable() %>%
-  kable_styling()
+# amostra_Coef %>%
+#   dplyr::select(-c(term)) %>%
+#   kable() %>%
+#   kable_styling()
 
 ```
-
-
 
 # LOBES
 
@@ -1332,5 +1340,18 @@ fig_TX_age_lobes_DIAG
 fit_lobes <- ggarrange(fit_K_lobes, ggarrange(fit_S_lobes, fit_I_lobes,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
 
 fit_S_lobes
+
+ggsave("fig_TX_age_lobes_ROI_c.png", plot = fig_TX_age_lobes_ROI, dpi=1200, width = 18, height = 22, units = "cm", device = "png")
+ggsave("fig_TX_age_lobes_ROI_c.pdf", plot = fig_TX_age_lobes_ROI, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
+
+ggsave("fig_TX_age_lobes_DIAG_c.png", plot = fig_TX_age_lobes_DIAG, dpi=1200, width = 18, height = 22, units = "cm", device = "png")
+ggsave("fig_TX_age_lobes_DIAG_c.pdf", plot = fig_TX_age_lobes_DIAG, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
+
+fit_lobes <- ggarrange(fit_K_lobes, ggarrange(fit_S_lobes, fit_I_lobes,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+ggsave("fit_lobes_c.png", plot = fit_lobes, dpi=1200, width = 18, height = 22, units = "cm", device = "png")
+ggsave("fit_lobes_c.pdf", plot = fit_lobes, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
+
+
 
 ```
