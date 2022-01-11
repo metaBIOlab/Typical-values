@@ -1,0 +1,785 @@
+---
+title: "Typical"
+author: "Fernanda Hansen P. de Moraes"
+date: "05/03/2021"
+output: 
+  html_document: 
+    toc: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,
+                      message=FALSE,
+                      warning=FALSE,
+                      cache=TRUE)
+```
+
+```{r preparo, message=FALSE, warning=FALSE, include=FALSE}
+# PREPARO
+
+# define a area de trabalho
+setwd("C:/Users/ferna/Documents/idor/Gyrification/RRRRRR/comparing_samples/") # se no computador
+
+# carrega os pacotes utilizados
+source("01-call_packages.R")
+
+# Chama funcoes caso necessário
+source("02-funcoes.R")
+
+# onde estao os arquivos de resultados:
+path <- str_c("C:/Users/ferna/Documents/idor/Gyrification/STATS/long_tables/")
+
+path_yujiangscript <- str_c("C:/Users/ferna/Documents/idor/Gyrification/STATS/Wang_code_extraction/")
+
+path_yujiangscript_newsurfaces <- str_c("C:/Users/ferna/Documents/idor/Gyrification/STATS/Wang_code_extraction/")
+  
+path_lobes <- str_c("C:/Users/ferna/Documents/idor/Gyrification/STATS/LobesScaling/")
+ 
+path_sessions <- str_c("C:/Users/ferna/Documents/idor/Gyrification/Processamento_longitudinal/V6/data/")
+
+Age.cor = 25
+
+set.seed(1)
+
+# Prepara os dados para analise
+source("05-analises_prep.R")
+
+dados_datasetscomp <- dados_datasetscomp %>%
+   filter(Sample != "HCP500r",
+          Diagnostic != "MCI")
+
+# dados_datasetscomp <- dados_datasetscomp %>%
+#   filter(Sample != "HCP500r")
+
+dados_datasetscomp$Diagnostic <- relevel(dados_datasetscomp$Diagnostic, ref = "CTL")
+
+# dados_datasetscomp <- dados_datasetscomp %>% filter(Age == 18 | Age > 18)
+
+write.csv(dados_datasetscomp,"dados_datasetscomp.csv")
+
+```
+
+# Datasets description
+
+We included multiple datasets from different sites to estimate, accounting methodological and "subject" biases, typical values for K, S and I.
+
+```{r description, eval=FALSE, include=FALSE}
+filter(dados_datasetscomp, Sample != "Mota&Houzel2015", ROI == "hemisphere") %>%
+  group_by(Diagnostic) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
+) %>% kable(digits = 2) %>% kable_styling()
+
+# filter(dados_datasetscomp, Sample != "Mota&Houzel2015", ROI == "hemisphere") %>%
+#   group_by(Diagnostic, Gender) %>%
+#   summarise(
+#     N = n_distinct(SUBJ)
+# ) %>% kable(digits = 2) %>% kable_styling()
+# 
+# filter(dados_datasetscomp, Sample != "Mota&Houzel2015", ROI == "hemisphere") %>%
+#   summarise(
+#     N = n_distinct(SUBJ),
+#     age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+#     age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
+# ) %>% kable(digits = 2) %>% kable_styling()
+# 
+# filter(dados_datasetscomp,
+#        Sample != "Mota&Houzel2015",
+#        ROI == "hemisphere") %>%
+#   group_by(Sample, Diagnostic) %>%
+#   summarise(
+#     N = n_distinct(SUBJ),
+#     age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+#     age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2)),
+#     AvgT =  paste(signif(mean(AvgThickness), 2), "±", signif(sd(AvgThickness), 2)),
+#     AT =  paste(signif(mean(TotalArea), 2), "±", signif(sd(TotalArea), 2)),
+#     AE =  paste(signif(mean(ExposedArea), 2), "±", signif(sd(ExposedArea), 2)),
+#     K =  paste(signif(mean(K), 2), "±", signif(sd(K), 2)),
+#     S =  paste(signif(mean(S), 2), "±", signif(sd(S), 2)),
+#     I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
+#   ) %>% kable(digits = 2) %>% kable_styling()
+# 
+# 
+# filter(dados_datasetscomp, Sample != "Mota&Houzel2015", ROI == "hemisphere") %>%
+#   group_by(Sample, Diagnostic, Gender) %>%
+#   summarise(
+#     N = n_distinct(SUBJ)
+# ) %>% kable(digits = 2) %>% kable_styling()
+```
+
+# Mapping
+
+# correction factor lobes
+
+```{r eval=FALSE, include=FALSE}
+ggplot(filter(dados_datasetscomp, ROI != "hemisphere"), aes(x = ROI, y = c, color = Sample)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_pubr()
+
+ dados_datasetscomp_cov <- dados_datasetscomp %>%
+  group_by(SUBJ) %>%
+  mutate(
+    var = var(log10(c), na.rm = TRUE),
+    var_harm = var(log10(c_shiftc), na.rm = TRUE),
+    logAE = log10(ExposedArea_corrected),
+    logAT.T = log10(TotalArea_corrected * sqrt(AvgThickness))
+   #, cov = cov(logAE, logAT.T)
+  ) %>%
+  unique()
+
+ggplot(filter( dados_datasetscomp_cov, ROI != "hemisphere"), aes(x = var, alpha = 0.3)) +
+  geom_histogram() +
+  theme_pubr() + 
+  guides(alpha = "none") 
+# + facet_wrap(Sample ~ .)
+
+ggplot(filter( dados_datasetscomp_cov, ROI != "hemisphere"), aes(x = var, y = var_harm)) +
+  geom_point(aes(color = Sample)) +
+  stat_regline_equation() +
+  theme_pubr()
+
+ dados_datasetscomp <- filter( dados_datasetscomp_cov, ROI != "hemisphere") %>% 
+  dplyr::select(c(SUBJ, logAE, logAT.T))
+# %>% unite(Sample_ROI, Sample, ROI, sep = "_")
+
+ dados_datasetscompList <- split( dados_datasetscomp[ ,c("logAE", "logAT.T")], list(Group =  dados_datasetscomp$SUBJ))
+
+within.group.cov <- lapply( dados_datasetscompList , function(x) cov(x[c("logAE", "logAT.T")], use="pairwise.complete.obs"))
+
+cov <- as.data.frame(unlist(within.group.cov, recursive = TRUE, use.names = TRUE))
+cov$SUBJ_n <- row.names(cov)   
+colnames(cov)[1] <- "delta"
+
+cov <- cov %>%
+  separate(SUBJ_n,into = c("SUBJ", "n"), sep = -1) %>%
+  pivot_wider(names_from = n, values_from = delta, names_prefix = "delta")
+
+ dados_datasetscomp_cov <- full_join( dados_datasetscomp_cov, cov) %>%
+  mutate(gama_harm = (delta1-delta4)/(2*delta2-var_harm),
+         alpha_lobes_harm = 1/(gama_harm+sqrt(1+gama_harm^2)),
+         gama = (delta1-delta4)/(2*delta2-var),
+         alpha_lobes = 1/(gama+sqrt(1+gama^2)))
+
+ggplot(filter( dados_datasetscomp_cov, ROI != "hemisphere"), aes(x = alpha_lobes, alpha = 0.3)) +
+  geom_histogram() +
+  geom_vline(xintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) +
+  labs(x ="Slope lobes") +
+  guides(alpha = "none")
+
+ggplot(filter( dados_datasetscomp_cov, ROI != "hemisphere"), aes(x = alpha_lobes_harm, alpha = 0.3)) +
+  geom_histogram() +
+  geom_vline(xintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) +
+  labs(x ="Slope lobes (harmonized)") +
+  guides(alpha = "none")
+
+```
+
+## CTL
+
+```{r}
+paste("N SUBJ", n_distinct(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
+paste("mean age", mean(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age), ", sd = ", sd(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age))
+
+ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = logExposedArea, y = 1/2 * logAvgThickness + logTotalArea)) +
+  geom_point(aes(color = Sample)) +
+  stat_regline_equation()+
+  geom_smooth()+
+  theme_pubr()
+
+lm <- lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), na.action = na.omit)
+
+summary(lm)
+tidy(lm)
+
+amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea)")
+
+amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
+
+ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  geom_point() +
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  labs(y ="Slope", x = "Age interval") +
+  geom_text(aes(label = N), nudge_y = 0.3) +
+  geom_line(group = 0)
+
+ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval), aes(y = K, x = Age_interval)) +
+    geom_boxplot() + 
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1 )
+    ) 
+```
+
+```{r}
+amostra_Coef <- filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, ROI) %>%
+    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea_corrected ~ logExposedArea_corrected, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "logExposedArea_corrected")
+
+ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = ROI)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  geom_point() +
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y ="Slope", x = "Age interval") +
+  geom_text(aes(label = N), nudge_y = 0.3)
+
+ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K, x = Age_interval, color = ROI)) +
+    geom_boxplot() + 
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+### per subject
+```{r}
+amostra_Coef <- filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+  group_by(SUBJ) %>%
+  do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea_corrected ~ logExposedArea_corrected, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+  unnest(fit_amostra)
+
+ggplot(filter(amostra_Coef, term == "logExposedArea_corrected"), aes(x = estimate, alpha = 0.3)) +
+  geom_histogram() +
+  geom_vline(xintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) +
+  labs(x ="Slope", x = "Age interval") +
+  guides(alpha = "none")
+```
+
+## CTL vs AD
+
+```{r}
+amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "logExposedArea")
+
+amostra_Coef$Diagnostic <- factor(amostra_Coef$Diagnostic, levels=c('AD', 'CTL', 'MCI'))
+
+ggplot(amostra_Coef,
+       aes(y = estimate, x = Age_interval, color = Diagnostic)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.text.x = element_text(
+    angle = 45,
+    hjust = 1
+  )) +
+  labs(y = "Slope", x = "Age interval") +
+  geom_text(aes(label = N), nudge_y = 0.3)
+
+```
+
+```{r mapping}
+paste("Total number of CTL subjects =", n_distinct(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
+paste("Age range CTL. Min age = ", min(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age), "; max age = ", max(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age))
+
+figS6a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age , y = K)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = "none")+ 
+  labs(x = "Age [years]")
+
+figS6b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = S)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = "none", color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(legend.position= "none")
+
+figS6c <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = I)) + geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) + 
+  geom_smooth(color = "black", method = "lm") + theme_pubr() +
+  guides(alpha = "none", color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(legend.position= "none")
+ 
+figS6 <- ggarrange(figS6a, ggarrange(figS6b, figS6c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+figS6
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$K, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$S, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$I, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+# Harmonization
+
+# Figures
+
+```{r eval=FALSE, include=FALSE}
+T_shifta <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = AvgThickness, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  labs(y = "T") +
+  scale_x_continuous(limits = c(0,100))
+
+T_shiftb <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = AvgThickness_shiftc, color = Sample)) +
+  geom_point() +
+  theme_pubr() +
+  labs(y = "T (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+T_shift <- ggarrange(T_shifta, T_shiftb,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+T_shift
+
+```
+
+```{r eval=FALSE, include=FALSE}
+GI_shifta <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = localGI, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  labs(y = "GI") +
+  scale_x_continuous(limits = c(0,100))
+
+GI_shiftb <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = localGI_shiftc, color = Sample)) +
+  geom_point() +
+  theme_pubr() +
+  labs(y = "GI (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+GI_shift <- ggarrange(GI_shifta, GI_shiftb,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+GI_shift
+```
+
+```{r echo=FALSE}
+K_shifta <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K, color = Sample, alpha = 0.4))+
+  geom_point() +
+  theme_pubr() + 
+  guides(alpha = "none") +
+  scale_x_continuous(limits = c(0,100))
+
+K_lifespan_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") + geom_smooth(aes(color = Sample, fill = Sample), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  scale_x_continuous(limits = c(0,100))
+
+K_shiftb <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K_shiftc, color = Sample, alpha = 0.4))+
+  geom_point() +
+    guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "K (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+K_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") + geom_smooth(aes(color = Sample, fill = Sample), method = "lm") +
+    guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "K (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+K_shift <- ggarrange(K_shifta, K_shiftb,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+K_shift
+
+K_lifespan <- ggarrange(K_lifespan_a, K_lifespan_b,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+# K_lifespan
+
+```
+
+Entre 15 e 35 anos:
+
+```{r echo=FALSE}
+ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Sample != "HCPr900", Sample != "AHEAD"), aes(x = Age, y = K))+
+  geom_point(aes(color = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", alpha = 0.3) +
+  theme_pubr() + 
+  guides(alpha = "none") +
+  scale_x_continuous(limits = c(15,35)) +
+  stat_regline_equation()
+
+ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Sample != "HCPr900", Sample != "AHEAD"), aes(x = Age, y = K_shiftc))+
+  geom_point(aes(color = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", alpha = 0.3) +
+  guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "K (harmonized)") +
+  scale_x_continuous(limits = c(15,35)) +
+  stat_regline_equation()
+
+```
+
+```{r include=FALSE}
+S_shifta <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  scale_x_continuous(limits = c(0,100))
+
+S_shiftb <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S_shiftc, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  labs(y = "S (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+S_lifespan_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S, alpha = 0.4)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+  geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, fill = Sample), method = "lm") +
+  guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "S") +
+  scale_x_continuous(limits = c(0,100))
+
+S_shift <- ggarrange(S_shifta, S_shiftb,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+S_shift
+
+S_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S_shiftc, alpha = 0.4))+
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+  geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, fill = Sample), method = "lm") +
+  guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "S (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+S_lifespan <- ggarrange(S_lifespan_a, S_lifespan_b,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+S_lifespan
+
+```
+
+```{r include=FALSE}
+I_shifta <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  scale_x_continuous(limits = c(0,100))
+
+I_lifespan_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I, alpha = 0.4))+
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+  geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, fill = Sample), method = "lm") +
+  guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "I") +
+  scale_x_continuous(limits = c(0,100))
+
+I_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I_shiftc, alpha = 0.4))+
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+  geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, fill = Sample), method = "lm") +
+  guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "I (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+I_shiftb <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I_shiftc, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  labs(y = "I (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+
+I_shift <- ggarrange(I_shifta, I_shiftb,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+I_shift
+
+I_lifespan <- ggarrange(I_lifespan_a, I_lifespan_b,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+I_lifespan
+
+```
+
+```{r cache=TRUE}
+paste("N SUBJ", n_distinct(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$SUBJ))
+paste("mean age", mean(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age), ", sd = ", sd(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age))
+
+ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = log10(ExposedArea_shiftc), y = 1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc))) +
+  geom_point(aes(color = Sample)) +
+  stat_regline_equation()+
+  geom_smooth()+
+  theme_pubr()
+
+lm <- lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), na.action = na.omit)
+
+summary(lm)
+tidy(lm)
+
+amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
+
+amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
+
+cor.test(amostra_Coef$estimate, amostra_Coef$Age_intervalnumber)
+
+cor.test(filter(amostra_Coef, Age_intervalnumber > 1)$estimate, filter(amostra_Coef, Age_intervalnumber > 1)$Age_intervalnumber)
+
+fig_slope_ageinterval <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() +
+  geom_line(group = 1) + 
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1 )
+    ) + labs(y ="Slope (after harmonization)", x = "Age interval") +  geom_text(aes(label = N), nudge_y = 0.2)
+
+fig_slope_ageinterval
+
+ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K_shiftc, x = Age_interval), aes(y = K, x = Age_interval)) +
+    geom_boxplot() + 
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1 )
+    ) + labs(y ="K (after harmonization)", x = "Age interval")
+
+```
+
+
+```{r}
+amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD" , Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"| Diagnostic == "AD" , Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval, Diagnostic) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
+
+amostra_Coef$Diagnostic <- factor(amostra_Coef$Diagnostic, levels=c('AD', 'CTL'))
+
+ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = Diagnostic)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() + geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10),
+          text = element_text(size = 10),
+          axis.text.x = element_text(angle = 45, hjust = 1 )
+    ) + labs(y ="Slope (after harmonization)", x = "Age interval") +  geom_text(aes(label = N), nudge_y = 0.3)
+
+```
+
+# LOBES
+
+```{r}
+amostra_Coef <- filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(ROI, Age_interval) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter( dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea)")
+
+fig_slope_lobes_ageinterval <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = ROI)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  geom_point() +
+  geom_line(aes(group = ROI)) + 
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) +
+  labs(y ="Slope", x = "Age interval")  
+
+fig_slope_lobes_ageinterval
+```
+
+
+```{r echo=FALSE}
+ dados_datasetscomp <- filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL" | Diagnostic == "MCI"| Diagnostic == "AD", Sample != "IDOR-CCD-Control")
+ dados_datasetscomp$Diagnostic <- factor( dados_datasetscomp$Diagnostic, levels = c("CTL", "MCI","AD"))
+ dados_datasetscomp$Sample <- as.factor( dados_datasetscomp$Sample)
+
+N_SUBJ <-  dados_datasetscomp %>% group_by(Diagnostic, ROI) %>% summarise(N_SUBJ = n_distinct(SUBJ))
+```
+
+# Harmonization figures
+```{r eval=FALSE, include=FALSE}
+GI_shifta_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = localGI, color = Sample))+
+  geom_point() +
+  theme_pubr() + labs(y = "GI") +
+  facet_grid(ROI ~ .)
+
+GI_shiftb_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = localGI_shiftc, color = Sample))+
+  geom_point() +
+  theme_pubr() + labs(y = "GI (harmonized)") +
+  facet_grid(ROI ~ .)
+
+
+GI_shift_lobes <- ggarrange(GI_shifta_lobes, GI_shiftb_lobes,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+GI_shift_lobes
+
+```
+
+```{r echo=FALSE}
+K_shifta_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K, color = Sample, alpha = 0.4))+
+  geom_point() +
+  theme_pubr() + 
+  guides(alpha = "none") +
+  facet_grid(ROI ~ .)
+
+K_shiftb_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K_shiftc, color = Sample, alpha = 0.4))+
+  geom_point() +
+    guides(alpha = "none") + 
+  theme_pubr() + labs(y = "K (harmonized)") +
+  facet_grid(ROI ~ .)
+
+
+K_shift_lobes <- ggarrange(K_shifta_lobes, K_shiftb_lobes,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+K_shift_lobes
+
+```
+
+```{r include=FALSE}
+S_shifta_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  facet_grid(ROI ~ .)
+
+S_shiftb_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S_shiftc, color = Sample))+
+  geom_point() +
+  theme_pubr() + labs(y = "S (harmonized)") +
+  facet_grid(ROI ~ .)
+
+
+S_shift_lobes <- ggarrange(S_shifta_lobes, S_shiftb_lobes,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+S_shift_lobes
+
+```
+
+```{r include=FALSE}
+I_shifta_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I, color = Sample))+
+  geom_point() +
+  theme_pubr() +
+  facet_grid(ROI ~ .)
+
+I_shiftb_lobes <- ggplot(filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I_shiftc, color = Sample))+
+  geom_point() +
+  theme_pubr() + labs(y = "I (harmonized)") +
+  facet_grid(ROI ~ .)
+
+
+I_shift_lobes <- ggarrange(I_shifta_lobes, I_shiftb_lobes,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+I_shift_lobes
+
+```
+
+```{r eval=FALSE, include=FALSE}
+ggplot( dados_datasetscomp, aes(x = Age, y = AvgThickness_shiftc, color = Sample)) + 
+  geom_point() + 
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
+  facet_grid(ROI ~.)
+```
+
+```{r eval=FALSE, include=FALSE}
+ggplot( dados_datasetscomp, aes(x = Age, y = K_shiftc, color = Sample)) + 
+  geom_point() + 
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
+  facet_grid(ROI ~.)
+```
+
+```{r}
+amostra_Coef <- filter( dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(ROI, Age_interval) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter( dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
+
+# amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
+
+# cor.test(filter(amostra_Coef, ROI == "F")$estimate, filter(amostra_Coef, ROI == "F")$Age_intervalnumber)
+ 
+# cor.test(filter(amostra_Coef, ROI == "O")$estimate, filter(amostra_Coef, ROI == "O")$Age_intervalnumber)
+ 
+# cor.test(filter(amostra_Coef, ROI == "P")$estimate, filter(amostra_Coef, ROI == "P")$Age_intervalnumber)
+
+# cor.test(filter(amostra_Coef, ROI == "T")$estimate, filter(amostra_Coef, ROI == "T")$Age_intervalnumber)
+
+# cor.test(filter(amostra_Coef, ROI == "F", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "F", Age_intervalnumber > 1)$Age_intervalnumber)
+
+# cor.test(filter(amostra_Coef, ROI == "O", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "O", Age_intervalnumber > 1)$Age_intervalnumber)
+ 
+# cor.test(filter(amostra_Coef, ROI == "P", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "P", Age_intervalnumber > 1)$Age_intervalnumber)
+
+# cor.test(filter(amostra_Coef, ROI == "T", Age_intervalnumber > 1)$estimate, filter(amostra_Coef, ROI == "T", Age_intervalnumber > 1)$Age_intervalnumber)
+
+fig_slope_lobes_ageinterval <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval, color = ROI)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  geom_point() +
+  geom_line(aes(group = ROI)) + 
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1 )) +
+  labs(y ="Slope (after harmonization)", x = "Age interval")  
+
+fig_slope_lobes_ageinterval
+
+```
