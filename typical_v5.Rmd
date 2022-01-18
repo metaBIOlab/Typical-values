@@ -926,49 +926,6 @@ fig_age <- ggarrange(fig_K_age, ggarrange(fig_S_age, fig_I_age,labels = c("B","C
 # ggsave("fig_sampleeff.png", plot = fig_sampleeff, dpi=1200, width = 18, height = 18, units = "cm", device = "png")
 ```
 
-# After harmonization
-
-```{r cache=TRUE}
-amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval) %>%
-    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
-    unnest(fit_amostra)
-
-amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
-    group_by(Age_interval) %>%
-    summarise(
-        N = n_distinct(SUBJ),
-        min_age = min(Age),
-        max_age = max(Age))
-
-amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
-
-amostra_Coef$Age_intervalnumber <- as.numeric(factor(amostra_Coef$Age_interval))-1
-
-cor.test(amostra_Coef$estimate, amostra_Coef$Age_intervalnumber)
-
-cor.test(filter(amostra_Coef, Age_intervalnumber > 1)$estimate, filter(amostra_Coef, Age_intervalnumber > 1)$Age_intervalnumber)
-
-fig_slope_ageinterval <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
-    geom_point() +
-  geom_line(group = 1) + 
-  geom_hline(yintercept = 1.25, linetype = "dashed") +
-    theme_pubr() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-    ) + labs(y ="Slope (after harmonization)", x = "Age interval") +  geom_text(aes(label = N), nudge_y = 0.2)
-
-fig_slope_ageinterval
-
-# ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]"), aes(y = K_shiftc, x = Age_interval), aes(y = K, x = Age_interval)) +
-#     geom_boxplot() + 
-#     theme_pubr() + 
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-#     ) + labs(y ="K (after harmonization)", x = "Age interval")
-
-# ggsave("fig_slope_ageinterval.png", plot = fig_slope_ageinterval, dpi=1200, width = 18, height = 14, units = "cm", device = "png")
-ggsave("fig_slope_ageinterval.pdf", plot = fig_slope_ageinterval, dpi=1200, width = 18, height = 14, units = "cm", device = "pdf")
-```
 
 
 ```{r eval=FALSE, include=FALSE}
@@ -1005,7 +962,7 @@ amostra_Coef%>% dplyr::select(-c(term)) %>% kable() %>% kable_styling()
 ## GM volume \~ Age
 
 ```{r cache=TRUE}
-m.1 <- lme4::lmer(AvgThickness_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+m.1 <- lme4::lmer(GMvolume_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
 
 # performance::check_model(m.1)
 
