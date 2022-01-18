@@ -84,13 +84,8 @@ set.seed(1)
 ```
 
 ```{r import files}
-dados_datasetscomp <- read_csv("dados_datasetscomp.csv")
+dados_datasetscomp <- read_csv("dados_datasetscomp2.csv")
 
-dados_datasetscomp <- dados_datasetscomp %>%
-  filter(Sample != "ds000030",
-         Diagnostic != "MCI")
-
-write.csv(dados_datasetscomp,"dados_datasetscomp2.csv")
 ```
 
 # DATA PREPARATION
