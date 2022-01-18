@@ -536,7 +536,7 @@ lm_Age <-
 
 lm_Age <- lm_Age %>% mutate(Age_interval = as.double((str_sub(Age_interval,2,3))))
 
-cor.test(filter(lm_Age, term == "log10(ExposedArea)")$estimate, filter(lm_Age, term == "log10(ExposedArea)")$Age_interval)
+cor.test(filter(lm_Age, term == "log10(ExposedArea_shiftc)")$estimate, filter(lm_Age, term == "log10(ExposedArea_shiftc)")$Age_interval)
 
 ```
 
