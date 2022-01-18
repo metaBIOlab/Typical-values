@@ -47,14 +47,13 @@ set.seed(1)
 source("05-analises_prep.R")
 
 dados_datasetscomp <- dados_datasetscomp %>%
-  filter(Sample != "HCP500r",
+  filter(Sample != "HCP500r", Sample != "ds000030",
          Diagnostic != "MCI")
 
-dados_datasetscomp$Diagnostic <- relevel(dados_datasetscomp$Diagnostic, ref = "CTL")
 
 # dados_datasetscomp <- dados_datasetscomp %>% filter(Age == 18 | Age > 18)
 
-write.csv(dados_datasetscomp,"dados_datasetscomp.csv")
+# write.csv(dados_datasetscomp,"dados_datasetscomp.csv")
 ```
 
 # Datasets description
