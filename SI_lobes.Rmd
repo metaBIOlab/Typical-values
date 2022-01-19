@@ -691,21 +691,9 @@ fig_TX_age_lobes_ROI <- ggarrange(TX_K_Within_regions, TX_S_Within_regions, TX_I
 fig_TX_age_lobes_DIAG <- ggarrange(TX_K_Within_DIAG, TX_S_Within_DIAG, TX_I_Within_DIAG,labels = c("A","B","C"), nrow = 3, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
 
 
-ggsave("fig_TX_age_c.pdf", plot = fig_TX_age, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
-
-ggsave("fig_age_c.pdf", plot = fig_age, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
-
 ggsave("fig_TX_age_lobes_ROI_c.pdf", plot = fig_TX_age_lobes_ROI, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
 
 ggsave("fig_TX_age_lobes_DIAG_c.pdf", plot = fig_TX_age_lobes_DIAG, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
-
-
-fit_lobes <- ggarrange(fit_K_lobes, ggarrange(fit_S_lobes, fit_I_lobes,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
-
-fit_S_lobes
-
-ggsave("fit_lobes_c.png", plot = fit_lobes, dpi=1200, width = 18, height = 22, units = "cm", device = "png")
-ggsave("fit_lobes_c.pdf", plot = fit_lobes, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
 
 ```
 
