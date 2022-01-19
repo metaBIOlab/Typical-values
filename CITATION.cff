@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: >-
+  Analysis code for Establishing a baseline for human cortical folding morphological variables, a multicenter study
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+authors:
+  - given-names: 'Fernanda Hansen P. '
+    family-names: de Moraes
+    email: fernanda.hansen@idor.org
+    affiliation: Instituto D'Or de Pesquisa e Ensino (IDOR)
+    orcid: 'https://orcid.org/0000-0002-1485-8126'
+  - given-names: 'Victor B. B. '
+    family-names: Mello
+    affiliation: Universidade Federal do Ri ode JAneiro (UFRJ)
+version: v0.1
+doi: 10.5281/zenodo.5879895
+date-released: 2022-01-19
+url: "https://github.com/metaBIOlab/Typical-values"
