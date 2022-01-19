@@ -850,36 +850,39 @@ CTL
 <h3><span class="header-section-number">5.2.4</span> ExposedArea ~ Age</h3>
 <p>Model summary and R squared:</p>
 <pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: GMvolume ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+## Formula: 
+## ExposedArea ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
 ##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
 ## 
-## REML criterion at convergence: 183968.1
+## REML criterion at convergence: 148576.9
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -3.8395 -0.6727 -0.0320  0.6298  4.5351 
+## -2.8868 -0.7093 -0.0618  0.6706  3.8432 
 ## 
 ## Random effects:
-##  Groups            Name        Variance  Std.Dev.
-##  Sample:Diagnostic (Intercept)  27722513  5265   
-##  Sample            (Intercept) 366049150 19132   
-##  Residual                      733577651 27085   
+##  Groups            Name        Variance Std.Dev.
+##  Sample:Diagnostic (Intercept)       0     0.0  
+##  Sample            (Intercept)  279141   528.3  
+##  Residual                      8382585  2895.3  
 ## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
 ## 
 ## Fixed effects:
 ##                   Estimate Std. Error t value
-## (Intercept)      303365.74    6119.08  49.577
-## Age               -1061.86      27.79 -38.216
-## DiagnosticAD     -67730.51    9855.71  -6.872
-## Age:DiagnosticAD    725.19     105.75   6.858
+## (Intercept)      40714.770    207.022 196.669
+## Age                -40.602      2.859 -14.204
+## DiagnosticAD      -262.931    853.269  -0.308
+## Age:DiagnosticAD     1.535     11.275   0.136
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) Age    DgnsAD
-## Age         -0.196              
-## DiagnostcAD -0.083  0.195       
-## Ag:DgnstcAD  0.052 -0.263 -0.809</code></pre>
-<pre><code>##            R2m       R2c
-## [1,] 0.3957362 0.6067994</code></pre>
+## Age         -0.597              
+## DiagnostcAD -0.151  0.249       
+## Ag:DgnstcAD  0.152 -0.255 -0.992
+## optimizer (nloptwrap) convergence code: 0 (OK)
+## boundary (singular) fit: see ?isSingular</code></pre>
+<pre><code>##             R2m       R2c
+## [1,] 0.09982676 0.1288366</code></pre>
 </div>
 <div id="gi-age" class="section level3" number="5.2.5">
 <h3><span class="header-section-number">5.2.5</span> GI ~ Age</h3>
@@ -922,37 +925,36 @@ CTL
 <h3><span class="header-section-number">5.2.6</span> K ~ Age</h3>
 <p>Model summary and R squared:</p>
 <pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: 
-## AvgThickness ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+## Formula: K ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
 ##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
 ## 
-## REML criterion at convergence: -13111.9
+## REML criterion at convergence: -42555
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -7.8038 -0.6167  0.0104  0.6495  3.4140 
+## -6.9733 -0.6065  0.0381  0.6446  5.2725 
 ## 
 ## Random effects:
 ##  Groups            Name        Variance  Std.Dev.
-##  Sample:Diagnostic (Intercept) 0.0006026 0.02455 
-##  Sample            (Intercept) 0.0071880 0.08478 
-##  Residual                      0.0110146 0.10495 
+##  Sample:Diagnostic (Intercept) 4.607e-06 0.002146
+##  Sample            (Intercept) 4.410e-04 0.021001
+##  Residual                      2.658e-04 0.016304
 ## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
 ## 
 ## Fixed effects:
 ##                    Estimate Std. Error t value
-## (Intercept)       2.7038037  0.0270734  99.869
-## Age              -0.0044384  0.0001077 -41.194
-## DiagnosticAD     -0.3421007  0.0405587  -8.435
-## Age:DiagnosticAD  0.0029937  0.0004098   7.305
+## (Intercept)      -4.920e-01  6.412e-03  -76.73
+## Age              -8.612e-04  1.675e-05  -51.40
+## DiagnosticAD     -8.439e-02  5.444e-03  -15.50
+## Age:DiagnosticAD  8.855e-04  6.366e-05   13.91
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) Age    DgnsAD
-## Age         -0.172              
-## DiagnostcAD -0.084  0.183       
-## Ag:DgnstcAD  0.045 -0.263 -0.762</code></pre>
+## Age         -0.113              
+## DiagnostcAD -0.039  0.221       
+## Ag:DgnstcAD  0.030 -0.264 -0.882</code></pre>
 <pre><code>##            R2m       R2c
-## [1,] 0.4615061 0.6845916</code></pre>
+## [1,] 0.4372324 0.7897408</code></pre>
 </div>
 <div id="s-age" class="section level3" number="5.2.7">
 <h3><span class="header-section-number">5.2.7</span> S ~ Age</h3>
@@ -993,38 +995,36 @@ CTL
 <h3><span class="header-section-number">5.2.8</span> I ~ Age</h3>
 <p>Model summary and R squared:</p>
 <pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: TotalArea ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+## Formula: I ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
 ##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
 ## 
-## REML criterion at convergence: 167642
+## REML criterion at convergence: -17050
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -2.9066 -0.7162 -0.0476  0.6633  4.2777 
+## -4.9306 -0.6593 -0.0005  0.6762  3.2113 
 ## 
 ## Random effects:
-##  Groups            Name        Variance Std.Dev.
-##  Sample:Diagnostic (Intercept)        0    0    
-##  Sample            (Intercept) 23918246 4891    
-##  Residual                      93180143 9653    
+##  Groups            Name        Variance  Std.Dev.
+##  Sample:Diagnostic (Intercept) 0.0001859 0.01364 
+##  Sample            (Intercept) 0.0013945 0.03734 
+##  Residual                      0.0067038 0.08188 
 ## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
 ## 
 ## Fixed effects:
 ##                    Estimate Std. Error t value
-## (Intercept)      113025.061   1543.436  73.229
-## Age                -244.189      9.866 -24.750
-## DiagnosticAD     -13184.422   2852.379  -4.622
-## Age:DiagnosticAD    152.485     37.675   4.047
+## (Intercept)       1.053e+01  1.259e-02 836.069
+## Age              -3.118e-03  8.371e-05 -37.254
+## DiagnosticAD     -1.829e-01  2.848e-02  -6.421
+## Age:DiagnosticAD  1.747e-03  3.196e-04   5.467
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) Age    DgnsAD
-## Age         -0.277              
-## DiagnostcAD -0.073  0.259       
-## Ag:DgnstcAD  0.072 -0.263 -0.992
-## optimizer (nloptwrap) convergence code: 0 (OK)
-## boundary (singular) fit: see ?isSingular</code></pre>
+## Age         -0.287              
+## DiagnostcAD -0.109  0.200       
+## Ag:DgnstcAD  0.075 -0.262 -0.844</code></pre>
 <pre><code>##            R2m       R2c
-## [1,] 0.2353489 0.3915348</code></pre>
+## [1,] 0.4505911 0.5554086</code></pre>
 </div>
 </div>
 </div>
