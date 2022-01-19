@@ -592,6 +592,12 @@ summary(m.1)
 r.squaredGLMM(m.1)
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -612,6 +618,12 @@ Model summary and R squared:
 ```{r}
 summary(m.1)
 r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Natural fluctuation error:
@@ -636,6 +648,12 @@ summary(m.1)
 r.squaredGLMM(m.1)
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -656,6 +674,12 @@ Model summary and R squared:
 ```{r}
 summary(m.1)
 r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Natural fluctuation error:
@@ -680,6 +704,12 @@ summary(m.1)
 r.squaredGLMM(m.1)
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -700,6 +730,12 @@ Model summary and R squared:
 ```{r}
 summary(m.1)
 r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Natural fluctuation error:
@@ -724,6 +760,12 @@ summary(m.1)
 r.squaredGLMM(m.1)
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -744,6 +786,12 @@ Model summary and R squared:
 ```{r}
 summary(m.1)
 r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Natural fluctuation error:
@@ -933,6 +981,12 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
 
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -962,6 +1016,12 @@ lst <- m.lstk %>%
 tableT <- full_join(mean, lst, by = c("Diagnostic")) %>%
   mutate(percent = Age.trend*100/abs(lsmean), Variable = "T_shiftc")
  
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Natural fluctuation error:
@@ -998,6 +1058,12 @@ tableAT <- full_join(mean, lst, by = c("Diagnostic")) %>%
  
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -1026,6 +1092,12 @@ m.lstk <- as_tibble(m.lstk)
 
 tableAE <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "AE_shiftc")
 
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Natural fluctuation error:
@@ -1060,6 +1132,12 @@ tableGI <- full_join(mean, lst, by = c("Diagnostic")) %>%
 
 ```
 
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
 Natural fluctuation error:
 ```{r}
 signif(sigma.hat(m.1)$sigma$data,2)
@@ -1080,6 +1158,12 @@ summary(m.1)
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Mean values:
@@ -1154,7 +1238,6 @@ signif(sigma.hat(m.1)$sigma$Sample,2)
 
 ### S \~ Age
 
-
 ```{r}
 m.1 <- lme4::lmer(S_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
 
@@ -1163,6 +1246,12 @@ summary(m.1)
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Mean values:
@@ -1245,6 +1334,12 @@ summary(m.1)
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
 ```
 
 Mean values:

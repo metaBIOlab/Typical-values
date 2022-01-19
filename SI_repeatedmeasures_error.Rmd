@@ -1,0 +1,995 @@
+---
+title: "Typical"
+author: "Fernanda Hansen P. de Moraes"
+date: "05/03/2021"
+output: 
+  html_document: 
+    toc: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+```
+
+```{r preparo, message=FALSE, warning=FALSE, include=FALSE}
+# PREPARO
+
+# define a area de trabalho
+setwd("~/idor/Gyrification/RRRRRR/comparing_subjs") # se no computador
+
+# carrega os pacotes utilizados
+source("01-call_packages.R")
+
+# Chama funcoes caso necessário
+source("02-funcoes.R")
+
+# onde estao os arquivos de resultados:
+Age.cor = 25
+
+# Prepara os dados para analise
+source("05-analises_prep.R")
+
+dados$Session <- as.factor(dados$Session)
+
+dados <- dados %>% filter(SUBJ == "sub-0001"| SUBJ == "sub-0002"| SUBJ == "sub-0003"| SUBJ == "sub-0004"| SUBJ == "sub-0005"| SUBJ == "sub-0006"| SUBJ == "sub-0007"| SUBJ == "sub-0008"| SUBJ == "sub-0009"| SUBJ == "sub-0012"| SUBJ == "sub-0013"| SUBJ == "sub-0014"| SUBJ == "sub-0015"| SUBJ == "sub-0016"| SUBJ == "sub-0018"| SUBJ == "sub-0019"| SUBJ == "sub-0020"| SUBJ == "sub-0021"| SUBJ == "sub-0022"| SUBJ == "sub-0023"| SUBJ == "sub-0024"| SUBJ == "sub-0025"| SUBJ == "sub-0026"| SUBJ == "sub-0027"| SUBJ == "sub-0028"| SUBJ == "sub-0029"| SUBJ == "sub-0030"| SUBJ == "sub-0031"| SUBJ == "sub-0032"| SUBJ == "sub-0033"| SUBJ == "sub-0034"| SUBJ == "sub-0035"| SUBJ == "sub-0036"| SUBJ == "sub-0037"| SUBJ == "sub-0038"| SUBJ == "sub-0039"| SUBJ == "sub-0040"| SUBJ == "sub-0042"| SUBJ == "sub-0043"| SUBJ == "sub-0044"| SUBJ == "sub-0045"| SUBJ == "sub-0046"| SUBJ == "sub-0047"| SUBJ == "sub-0048"| SUBJ == "sub-0049"| SUBJ == "sub-0050"| SUBJ == "sub-0051"| SUBJ == "sub-0052"| SUBJ == "sub-0053"| SUBJ == "sub-0054")
+
+write.csv(dados,"dados_AOMICID1000.csv")
+```
+
+# Datasets description
+
+```{r description, echo=FALSE}
+filter(dados, ROI == "hemisphere") %>%
+  group_by(Session) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2)),
+    AvgT =  paste(signif(mean(AvgThickness), 2), "±", signif(sd(AvgThickness), 2)),
+    AT =  paste(signif(mean(TotalArea), 2), "±", signif(sd(TotalArea), 2)),
+    AE =  paste(signif(mean(ExposedArea), 2), "±", signif(sd(ExposedArea), 2)),
+    K =  paste(signif(mean(K), 2), "±", signif(sd(K), 2)),
+    S =  paste(signif(mean(S), 2), "±", signif(sd(S), 2)),
+    I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
+) %>% kable(digits = 2) %>% kable_styling()
+
+subj_1 <- unique(filter(dados, Session == 1)$SUBJ)
+subj_2 <- unique(filter(dados, Session == 2)$SUBJ)
+subj_3 <- unique(filter(dados, Session == 3)$SUBJ)
+
+```
+
+# Cortical folding model by Mota & Houzel (Science, 2015)
+
+Applying the cortical folding from Mota & Houzel:
+
+```{r model, echo=FALSE}
+amostra_Coef <- filter(dados, ROI == "hemisphere") %>%
+  group_by(Session) %>%
+  do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+  unnest(fit_amostra) 
+
+ggplot(data = filter(amostra_Coef, term == "logExposedArea"), aes(
+    x = Session,
+    y = estimate,
+    ymin = conf.low,
+    ymax = conf.high)) +
+    geom_hline(yintercept = 1.25,
+               linetype = "11",
+               colour = "grey60") +
+  geom_point() + 
+    geom_errorbar(position = position_dodge(width = 0.2)) +
+    coord_flip() + 
+    labs(y =  "Slope", x = "Session") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+amostra_Coef <- filter(dados, ROI == "hemisphere", Session == 1) %>%
+  do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+  unnest(fit_amostra)
+
+
+ggplot(data = filter(dados, ROI == "hemisphere", Session == 1), aes(logExposedArea, 1 / 2 * logAvgThickness + logTotalArea)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point() +
+  theme_pubr() + guides(shape = FALSE) +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  ) +
+  labs(caption = paste("Session 1, N = ", n_distinct(filter(dados, ROI == "hemisphere", Session == 1)$SUBJ)))
+
+ggplot(
+  filter(dados, ROI == "hemisphere", Session == 1),
+  aes(ExposedArea, sqrt(AvgThickness)*TotalArea)
+  ) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  theme_pubr() +
+  labs(caption = paste("Session 1, N = ", n_distinct(filter(dados, ROI == "hemisphere", Session == 1)$SUBJ)))
+
+ggplot(data = filter(dados, ROI == "hemisphere", Session == 1), aes(10^I, 10^Snorm)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point() +
+  theme_pubr() + guides() +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  ) +
+  labs(caption = paste("Session 1, N = ", n_distinct(filter(dados, ROI == "hemisphere", Session == 1)$SUBJ)))
+
+ggplot(data = filter(dados, ROI == "hemisphere", Session == 1), aes(10^Knorm, 10^Snorm)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point() +
+  theme_pubr() + guides() +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  ) +
+  labs(caption = paste("Session 1, N = ", n_distinct(filter(dados, ROI == "hemisphere", Session == 1)$SUBJ)))
+
+amostra_Coef %>% kable(digits = 2) %>% kable_styling()
+
+ggplot(filter(dados, ROI == "hemisphere", Session == 1), aes(x = Sample, y = 10^Knorm)) +
+    geom_boxplot()+
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "10^K norm") + ylim(0, 0.6)
+
+ggplot(filter(dados, ROI == "hemisphere", Session == 1), aes(x = Sample, y = 10^Knorm_age_decay)) +
+    geom_boxplot()+
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "10^K norm (age corrected)") + ylim(0, 0.6)
+
+paste("Verificando a diferenca entre o coeficiente obtido para a Sample e o teorico de 5/4, qual o valor p deste teste?", test_coef(lm(1 / 2 * logAvgThickness + logTotalArea ~ logExposedArea, data = filter(dados, ROI == "hemisphere", Session == 1), na.action = na.omit), 2, 1.25))
+
+plot_ly(
+filter(dados, ROI == "hemisphere", Session == 1),
+  x = ~ Knorm,
+  z =  ~ Snorm,
+  y =  ~ I,
+  type = "scatter3d",
+  mode = 'markers'
+) %>% layout(scene = list(
+  xaxis = list(title = 'Knorm'),
+  zaxis = list(title = 'Snorm', scaleanchor = "x"),
+  yaxis = list(title = 'Inorm', scaleanchor = "x")
+))
+
+
+
+```
+
+```{r mapping}
+paste("Total number of CTL subjects (Session 1) =", n_distinct(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$SUBJ))
+
+paste("Age range CTL. Min age = ", min(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$Age), "; max age = ", max(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$Age))
+
+figS6a <- ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1),
+       aes(x = Age , y = K)) +
+  geom_point() +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+#figS6a
+
+figS6b <-
+  ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1),
+       aes(x = Age , y = S)) +
+  geom_point() +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+#figS6b
+
+figS6c <- ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1),
+       aes(x = Age, y = I)) +
+  geom_point() + 
+  geom_smooth(color = "black", method = "lm") + theme_pubr() +
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10), legend.position= "none")
+ # figS6c      
+
+figS6 <- ggarrange(figS6a, ggarrange(figS6b, figS6c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+figS6
+
+ggsave("figS6.pdf", plot = figS6, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
+ggsave("figS6.pdf", plot = figS6, dpi=1200, width = 18, height = 22, units = "cm", device = "pdf")
+
+cor.test(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$K, filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$Age)
+
+cor.test(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$S, filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$Age)
+
+cor.test(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$I, filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$Age)
+```
+
+### Deaged
+
+```{r}
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1),
+      aes(x = Age, y = K_age_decay)) +
+    geom_point() +
+    geom_smooth(color = "black", method = "lm") +
+    theme_pubr() +
+    guides(alpha = FALSE)+ 
+    labs(x = "Age [years]") +
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10), text = element_text(size = 10))
+
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1),
+       aes(x = Age, y = 10^Knorm_age_decay)) +
+  geom_point() +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1),
+       aes(x = Age, y = 10^Snorm_age_decay)) +
+  geom_point() +
+  geom_smooth(color = "black", method = "lm") +
+  theme_pubr() +
+  guides(alpha = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+```
+
+# Sessions
+
+## CTL
+
+```{r }
+paste("Total number of CTL subjects (Session 1) =", n_distinct(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 1)$SUBJ))
+paste("Total number of CTL subjects (Session 2) =", n_distinct(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 2)$SUBJ))
+paste("Total number of CTL subjects (Session 3) =", n_distinct(filter(dados, ROI == "hemisphere", Diagnostic == "CTL", Session == 3)$SUBJ))
+
+paste("Age range CTL. Min age = ", min(filter(dados, ROI == "hemisphere", Diagnostic == "CTL")$Age), "; max age = ", max(filter(dados, ROI == "hemisphere", Diagnostic == "CTL")$Age))
+
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age , y = K)) +
+  geom_point(aes(color = Session, fill = Session, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) +
+  theme_pubr() +
+  guides(alpha = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = S)) +
+  geom_point(aes(color = Session, fill = Session, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  theme_pubr() +
+  guides(alpha = FALSE, color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10), legend.position= "none")
+
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = I)) +
+  geom_point(aes(color = Session, fill = Session, alpha = 0.4)) + 
+  geom_smooth(color = "black", method = "lm") +
+  geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  theme_pubr() +
+  guides(alpha = FALSE, color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10), legend.position= "none")
+
+ggplot(filter(dados, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = localGI)) +
+  geom_point(aes(color = Session, fill = Session, alpha = 0.4)) + 
+  geom_smooth(color = "black", method = "lm") +
+  geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  theme_pubr() +
+  guides(alpha = FALSE, color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10), legend.position= "none")
+
+
+```
+
+```{r, echo=FALSE}
+
+amostra_Coef <- filter(dados, ROI == "hemisphere") %>% group_by(Session) %>%
+  do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+  unnest(fit_amostra)
+
+fig_A_1 <- ggplot(data = filter(dados, ROI == "hemisphere"), aes(log10(ExposedArea), 1 / 2 * log10(AvgThickness) + log10(TotalArea), color = Session, fill = Session)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point() +
+    geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  theme_pubr() +
+  guides(shape = FALSE) +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  )
+
+ggsave("fig_A_1.pdf", plot = fig_A_1, dpi=1200, width = 11, height = 11, units = "cm", device = "pdf")
+
+ggplot(
+  filter(dados, ROI == "hemisphere"),
+  aes(ExposedArea, sqrt(AvgThickness)*TotalArea, color = Session, fill = Session)
+  ) +
+  geom_point() +
+    geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  geom_smooth(method = "lm", se = TRUE) +
+  theme_pubr() +
+  labs(caption = paste("Session, N = ", n_distinct(dados$SUBJ)))
+
+ggplot(data = filter(dados, ROI == "hemisphere"), aes(10^I, 10^Snorm)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point(aes(color = Session)) +
+    geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  theme_pubr() +
+  guides(shape = FALSE) +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  ) +
+  labs(caption = paste("Session, N = ", n_distinct(dados$SUBJ)))
+
+ggplot(data = filter(dados, ROI == "hemisphere"), aes(10^Knorm, 10^Snorm)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point(aes(color = Session)) +
+    geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+  theme_pubr() +
+  guides(shape = FALSE) +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  ) +
+  labs(caption = paste("Session, N = ", n_distinct(dados$SUBJ)))
+
+amostra_Coef %>% kable(digits = 2) %>% kable_styling()
+
+
+ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = K_age_decay)) +
+    geom_boxplot()+
+        geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "K (age corrected)")
+
+# ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = 10^Knorm)) +
+#     geom_boxplot()+
+#       geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+#     theme_pubr() +
+#     theme(
+#         axis.title = element_text(size = 11),
+#         axis.text = element_text(size = 10),
+#         text = element_text(size = 10),
+#         axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+#     )  + labs(y = "10^K norm") + ylim(0, 0.6)
+
+# ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = 10^Knorm_age_decay)) +
+#     geom_boxplot()+
+#     theme_pubr() +
+#     theme(
+#         axis.title = element_text(size = 11),
+#         axis.text = element_text(size = 10),
+#         text = element_text(size = 10),
+#         axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+#     )  + labs(y = "10^K norm (age corrected)") + ylim(0, 0.6)
+
+mean_K_I_S <-
+  filter(dados, ROI == "hemisphere") %>% group_by(Session) %>% summarise(
+    mean.K = mean(Knorm, na.rm = TRUE),
+    SD_K = sd(Knorm, na.rm = TRUE),
+    mean.I = mean(I, na.rm = TRUE),
+    SD_I = sd(I, na.rm = TRUE),
+    mean.S = mean(Snorm, na.rm = TRUE),
+    SD_S = sd(Snorm, na.rm = TRUE)
+    )
+
+plot_ly(
+mean_K_I_S,
+  x = ~ mean.K,
+  z =  ~ mean.S,
+  y =  ~ mean.I,
+  color = ~ Session,
+text =  ~ Session,
+  type = "scatter3d",
+  mode = 'markers+text'
+) %>% layout(scene = list(
+  xaxis = list(title = 'Knorm'),
+  zaxis = list(title = 'Snorm', scaleanchor = "x"),
+  yaxis = list(title = 'Inorm', scaleanchor = "x")
+))
+
+
+plot_ly(
+ filter(dados, ROI == "hemisphere"),
+  x = ~ Knorm,
+  z =  ~ Snorm,
+  y =  ~ I,
+  color = ~ Session,
+text =  ~ Session,
+  type = "scatter3d",
+  mode = 'markers+text'
+) %>% layout(scene = list(
+  xaxis = list(title = 'Knorm'),
+  zaxis = list(title = 'Snorm', scaleanchor = "x"),
+  yaxis = list(title = 'Inorm', scaleanchor = "x")
+))
+
+```
+
+```{r}
+
+ses_T <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = AvgThickness)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "AvgThickness [mm]", x = "Run")
+
+# filter(dados, ROI == "hemisphere") %>%
+#   group_by(Session) %>%
+#   identify_outliers(AvgThickness)
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = AvgThickness, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_K <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = K)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "K", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = K, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_S <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = S)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "S", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = S, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_I <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = I)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "I", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = I, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_var <- ggarrange(ses_T, ses_K, ses_S, ses_I, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), font.label = list(size = 11))
+ses_var
+
+ggsave("ses_var.pdf", plot = ses_var, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
+
+ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = localGI)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "localGI", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = localGI, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+```
+
+
+# SUBJ variance
+
+```{r}
+SD <- filter(dados, ROI == "hemisphere") %>% group_by(SUBJ, hemi) %>%
+  summarise(
+  meanT = mean(AvgThickness),
+  meanK =  mean(K),
+  meanS =  mean(S),
+  meanI =  mean(I),
+  meanGI = mean(localGI),
+  sd_T = sd(AvgThickness),
+  sd_K = sd(K),
+  sd_S = sd(S),
+  sd_I = sd(I),
+  sd_GI = sd(localGI),
+  SD_percent_T = sd_T*100/abs(meanT),
+  SD_percent_K = sd_K*100/abs(meanK),
+  SD_percent_S = sd_S*100/abs(meanS),
+  SD_percent_I = sd_I*100/abs(meanI),
+  SD_percent_GI = sd_GI*100/abs(meanGI)
+  )
+
+SD %>%
+  summarise(
+  N = n_distinct(SUBJ),
+  meanT = mean(meanT),
+  meanK =  mean(meanK),
+  meanS =  mean(meanS),
+  meanI =  mean(meanI),
+    meanGI = mean(meanGI),
+  sd_T = mean(sd_T),
+  sd_K = mean(sd_K),
+  sd_S = mean(sd_S),
+  sd_I = mean(sd_I),
+   sd_GI = mean(sd_GI)
+  ) %>%
+  summarise(
+  meanT = mean(meanT),
+  meanK =  mean(meanK),
+  meanS =  mean(meanS),
+  meanI =  mean(meanI),
+    meanGI = mean(meanGI),
+  sd_T = mean(sd_T),
+  sd_K = mean(sd_K),
+  sd_S = mean(sd_S),
+  sd_I = mean(sd_I),
+  sd_GI = mean(sd_GI),
+    SD_percent_T = sd_T*100/abs(meanT),
+  SD_percent_K = sd_K*100/abs(meanK),
+  SD_percent_S = sd_S*100/abs(meanS),
+  SD_percent_I = sd_I*100/abs(meanI),
+  SD_percent_GI = sd_GI*100/abs(meanGI)) %>%
+  kable() %>% kable_styling()
+
+paste("Desvio padrão médio de AvgT = ", signif(mean(SD$sd_T),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_T),2))
+paste("Desvio padrão médio de K = ", signif(mean(SD$sd_K),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_K),2))
+paste("Desvio padrão médio de S = ", signif(mean(SD$sd_S),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_S),2))
+paste("Desvio padrão médio de I = ", signif(mean(SD$sd_I),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_I),2))
+paste("Desvio padrão médio de GI = ", signif(mean(SD$sd_GI),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_GI),2))
+
+sd_T <- ggplot(SD, aes(x = sd_T)) +
+    geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_T))) +
+    geom_vline(aes(xintercept = mean(sd_T) - sd(sd_T)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_T) + sd(sd_T)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+  labs(x = "SD - Average Cortical Thickness [mm]") +
+    theme_pubr() + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_GI <- ggplot(SD, aes(x = sd_GI)) +
+    geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_GI))) +
+    geom_vline(aes(xintercept = mean(sd_GI) - sd(sd_GI)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_GI) + sd(sd_GI)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+  labs(x = "SD - Average Cortical Thickness [mm]") +
+    theme_pubr() + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_K <- ggplot(SD, aes(x = sd_K, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_K))) +
+      geom_vline(aes(xintercept = mean(sd_K) - sd(sd_K)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_K) + sd(sd_K)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+    labs(x = "SD - K") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_S <- ggplot(SD, aes(x = sd_S, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_S))) +
+        geom_vline(aes(xintercept = mean(sd_S) - sd(sd_S)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_S) + sd(sd_S)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+      labs(x = "SD - S") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_I <- ggplot(SD, aes(x = sd_I, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_I))) +
+        geom_vline(aes(xintercept = mean(sd_I) - sd(sd_I)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_I) + sd(sd_I)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+      labs(x = "SD - I") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd <- ggarrange(sd_T, sd_K, sd_S, sd_I, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), font.label = list(size = 11))
+sd
+sd_GI
+
+ggsave("sd.pdf", plot = sd, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
+
+sd_T <- ggplot(SD, aes(x = SD_percent_T, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(SD_percent_T))) +
+      geom_vline(aes(xintercept = mean(SD_percent_T) - sd(SD_percent_K)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(SD_percent_T) + sd(SD_percent_K)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+    labs(x = "SD/Mean % - T") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_K <- ggplot(SD, aes(x = SD_percent_K, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(SD_percent_K))) +
+      geom_vline(aes(xintercept = mean(SD_percent_K) - sd(SD_percent_K)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(SD_percent_K) + sd(SD_percent_K)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+    labs(x = "SD/Mean % - K") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_S <- ggplot(SD, aes(x = SD_percent_S, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(SD_percent_S))) +
+        geom_vline(aes(xintercept = mean(SD_percent_S) - sd(SD_percent_S)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(SD_percent_S) + sd(SD_percent_S)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+      labs(x = "SD/Mean %  - S") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_I <- ggplot(SD, aes(x = SD_percent_I, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(SD_percent_I))) +
+        geom_vline(aes(xintercept = mean(SD_percent_I) - sd(SD_percent_I)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(SD_percent_I) + sd(SD_percent_I)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+      labs(x = "SD/Mean %  - I") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd <- ggarrange(sd_T, sd_K, sd_S, sd_I, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), font.label = list(size = 11))
+sd
+
+
+```
+
+## AvgCortThickness \~ SUBJ
+```{r}
+N_SUBJ <- filter(dados, ROI == "hemisphere") %>% group_by(Session) %>% summarise(N_SUBJ = n_distinct(SUBJ))
+
+m.1 <- lme4::lmer(AvgThickness ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
+
+performance::check_model(m.1)
+
+anova(m.1)
+summary(m.1)
+s <- summary(m.1)
+#glance(m.1)
+#tidy(m.1) %>% kable() %>% kable_styling()
+sigma.hat(m.1)
+r.squaredGLMM(m.1)
+
+m.lstk <- lsmeans(m.1, ~Session)
+pairs <- pairs(m.lstk)
+
+m.lstk <-
+  as_tibble(m.lstk) %>% mutate(
+    mean = paste(signif(lsmean, 2), "±", signif(SE, 2)),
+    CI = paste(signif(lower.CL , 2), ";", signif(upper.CL , 2)),
+    N_SUBJ = N_SUBJ$N_SUBJ
+  ) %>% dplyr::select(c(Session, N_SUBJ, mean, CI))
+m.lstk %>% kable() %>% kable_styling()
+
+ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+  geom_point() + 
+    geom_errorbar( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  "Differences in slopes", x = "Constrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+
+e <- effect("Session", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Session, y = fit,ymin=lower, ymax=upper)) + geom_errorbar() + geom_line() + theme_pubr() + labs(x = "Session", y = "K") + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10),
+          text = element_text(size = 10), legend.position = "none")
+
+re <- as_tibble(ranef(m.1))
+
+ggplot(filter(re, grpvar == "SUBJ"), aes(y = condval, x = grp)) +
+  geom_errorbar(aes(ymin = condval+1.96*condsd, ymax = condval-1.96*condsd), width = 0.2) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+  ) + labs(y ="Intercept variation", x = "SUBJ")
+
+```
+
+## K \~ SUBJ
+```{r}
+N_SUBJ <- filter(dados, ROI == "hemisphere") %>% group_by(Session) %>% summarise(N_SUBJ = n_distinct(SUBJ))
+
+m.1 <- lme4::lmer(K ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
+
+performance::check_model(m.1)
+
+anova(m.1)
+summary(m.1)
+s <- summary(m.1)
+#glance(m.1)
+#tidy(m.1) %>% kable() %>% kable_styling()
+sigma.hat(m.1)
+r.squaredGLMM(m.1)
+
+m.lstk <- lsmeans(m.1, ~Session)
+pairs <- pairs(m.lstk)
+
+m.lstk <-
+  as_tibble(m.lstk) %>% mutate(
+    mean = paste(signif(lsmean, 2), "±", signif(SE, 2)),
+    CI = paste(signif(lower.CL , 2), ";", signif(upper.CL , 2)),
+    N_SUBJ = N_SUBJ$N_SUBJ
+  ) %>% dplyr::select(c(Session, N_SUBJ, mean, CI))
+m.lstk %>% kable() %>% kable_styling()
+
+ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+  geom_point() + 
+    geom_errorbar( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  "Differences in slopes", x = "Constrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+
+e <- effect("Session", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Session, y = fit,ymin=lower, ymax=upper)) + geom_errorbar() + geom_line() + theme_pubr() + labs(x = "Session", y = "K") + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10),
+          text = element_text(size = 10), legend.position = "none")
+
+re <- as_tibble(ranef(m.1))
+
+sampleeff.K <- ggplot(filter(re, grpvar == "SUBJ"), aes(y = condval, x = grp)) +
+  geom_errorbar(aes(ymin = condval+1.96*condsd, ymax = condval-1.96*condsd), width = 0.2) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+  ) + labs(y ="Intercept variation", x = "SUBJ")
+
+```
+
+## S \~ SUBJ
+
+```{r echo=FALSE}
+m.1 <- lme4::lmer(S ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
+
+performance::check_model(m.1)
+
+anova(m.1)
+summary(m.1)
+s <- summary(m.1)
+#glance(m.1)
+#tidy(m.1) %>% kable() %>% kable_styling()
+sigma.hat(m.1)
+r.squaredGLMM(m.1)
+
+m.lstk <- lsmeans(m.1, ~Session)
+pairs <- pairs(m.lstk)
+
+m.lstk <-
+  as_tibble(m.lstk) %>% mutate(
+    mean = paste(signif(lsmean, 2), "±", signif(SE, 2)),
+    CI = paste(signif(lower.CL , 2), ";", signif(upper.CL , 2)),
+    N_SUBJ = N_SUBJ$N_SUBJ
+  ) %>% dplyr::select(c(Session, N_SUBJ, mean, CI))
+m.lstk %>% kable() %>% kable_styling()
+
+ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_point() + 
+    geom_errorbar(position = position_dodge(width = 0.2), width = 0.2) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  "Differences in slopes", x = "Constrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+
+e <- effect("Session", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Session, y = fit,ymin=lower, ymax=upper)) + geom_errorbar(width =  0.2,) + geom_line() + theme_pubr() + labs(x = "Session", y = "S") + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10),
+          text = element_text(size = 10), legend.position = "none")
+
+re <- as_tibble(ranef(m.1))
+
+sampleeff.S <- ggplot(filter(re, grpvar == "SUBJ"), aes(y = condval, x = grp)) +
+  geom_errorbar(aes(ymin = condval+1.96*condsd, ymax = condval-1.96*condsd), width = 0.2) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+  ) + labs(y ="Intercept variation", x = "SUBJ")
+
+```
+
+## I \~ SUBJ
+
+```{r echo=FALSE}
+m.1 <- lme4::lmer(I ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
+
+performance::check_model(m.1)
+
+anova(m.1)
+summary(m.1)
+s <- summary(m.1)
+#glance(m.1)
+#tidy(m.1) %>% kable() %>% kable_styling()
+sigma.hat(m.1)
+r.squaredGLMM(m.1)
+
+m.lstk <- lsmeans(m.1, ~Session)
+pairs <- pairs(m.lstk)
+
+m.lstk <-
+  as_tibble(m.lstk) %>% mutate(
+    mean = paste(signif(lsmean, 2), "±", signif(SE, 2)),
+    CI = paste(signif(lower.CL , 2), ";", signif(upper.CL , 2)),
+    N_SUBJ = N_SUBJ$N_SUBJ
+  ) %>% dplyr::select(c(Session, N_SUBJ, mean, CI))
+m.lstk %>% kable() %>% kable_styling()
+
+ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_point() + 
+    geom_errorbar( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  "Differences in slopes", x = "Constrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+
+e <- effect("Session", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Session, y = fit,ymin=lower, ymax=upper)) + geom_errorbar() + geom_line() + theme_pubr() + labs(x = "Session", y = "I") + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10),
+          text = element_text(size = 10), legend.position = "none")
+
+re <- as_tibble(ranef(m.1))
+
+sampleeff.I <- ggplot(filter(re, grpvar == "SUBJ"), aes(y = condval, x = grp)) +
+  geom_errorbar(aes(ymin = condval+1.96*condsd, ymax = condval-1.96*condsd), width = 0.2) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_pubr() +
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+  ) + labs(y ="Intercept variation", x = "SUBJ")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+
+fig_sampleeff <- ggarrange(sampleeff.K, ggarrange(sampleeff.S, sampleeff.I,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+fig_sampleeff
+
+ggsave("fig_sampleeff.pdf", plot = fig_sampleeff, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
+```

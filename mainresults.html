@@ -1108,6 +1108,13 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.3957362 0.6067994</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##    lsmean
+##     &lt;dbl&gt;
+## 1 250218.</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 27000</code></pre>
@@ -1154,6 +1161,13 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.4615061 0.6845916</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   2.48</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 0.1</code></pre>
@@ -1201,6 +1215,13 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.2353489 0.3915348</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##    lsmean
+##     &lt;dbl&gt;
+## 1 100803.</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 9700</code></pre>
@@ -1249,13 +1270,20 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##             R2m       R2c
 ## [1,] 0.09982676 0.1288366</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1 38683.</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
-<pre><code>## [1] 2900</code></pre>
+<pre><code>## [1] 0.095</code></pre>
 <p>Type B error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
 <pre><code>## (Intercept) 
-##         530</code></pre>
+##        0.11</code></pre>
 </div>
 <div id="gi-age" class="section level3" number="5.4.5">
 <h3><span class="header-section-number">5.4.5</span> GI ~ Age</h3>
@@ -1263,39 +1291,44 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <p>Model summary and R squared:</p>
 <pre class="r"><code>summary(m.1)</code></pre>
 <pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: localGI ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+## Formula: K ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
 ##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
 ## 
-## REML criterion at convergence: -14689.7
+## REML criterion at convergence: -42555
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -3.7049 -0.6845 -0.0074  0.6784  6.4692 
+## -6.9733 -0.6065  0.0381  0.6446  5.2725 
 ## 
 ## Random effects:
-##  Groups            Name        Variance Std.Dev.
-##  Sample:Diagnostic (Intercept) 0.000000 0.00000 
-##  Sample            (Intercept) 0.012446 0.11156 
-##  Residual                      0.009017 0.09496 
+##  Groups            Name        Variance  Std.Dev.
+##  Sample:Diagnostic (Intercept) 4.607e-06 0.002146
+##  Sample            (Intercept) 4.410e-04 0.021001
+##  Residual                      2.658e-04 0.016304
 ## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
 ## 
 ## Fixed effects:
 ##                    Estimate Std. Error t value
-## (Intercept)       2.7763677  0.0339367   81.81
-## Age              -0.0034689  0.0000975  -35.58
-## DiagnosticAD     -0.3178661  0.0280689  -11.32
-## Age:DiagnosticAD  0.0037476  0.0003707   10.11
+## (Intercept)      -4.920e-01  6.412e-03  -76.73
+## Age              -8.612e-04  1.675e-05  -51.40
+## DiagnosticAD     -8.439e-02  5.444e-03  -15.50
+## Age:DiagnosticAD  8.855e-04  6.366e-05   13.91
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) Age    DgnsAD
-## Age         -0.124              
-## DiagnostcAD -0.033  0.260       
-## Ag:DgnstcAD  0.033 -0.264 -0.992
-## optimizer (nloptwrap) convergence code: 0 (OK)
-## boundary (singular) fit: see ?isSingular</code></pre>
+## Age         -0.113              
+## DiagnostcAD -0.039  0.221       
+## Ag:DgnstcAD  0.030 -0.264 -0.882</code></pre>
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
-## [1,] 0.2623413 0.6900971</code></pre>
+## [1,] 0.4372324 0.7897408</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   2.60</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 0.095</code></pre>
@@ -1341,6 +1374,13 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.4372324 0.7897408</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1 -0.535</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 0.016</code></pre>
@@ -1386,6 +1426,13 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m      R2c
 ## [1,] 0.1515722 0.399721</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   9.17</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 0.12</code></pre>
@@ -1431,13 +1478,20 @@ cor.test(filter(lm_Age, term == &quot;log10(ExposedArea)&quot;)$estimate, filter
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.4505911 0.5554086</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   10.4</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
-<pre><code>## [1] 0.082</code></pre>
+<pre><code>## [1] 27000</code></pre>
 <p>Type B error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
 <pre><code>## (Intercept) 
-##       0.037</code></pre>
+##           0</code></pre>
 </div>
 </div>
 <div id="multisite-harmonization" class="section level2" number="5.5">
@@ -2608,6 +2662,13 @@ ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + ge
   theme(axis.title = element_text(size = 11),
     axis.text = element_text(size = 10), text = element_text(size = 10))</code></pre>
 <p><img src="data:image/png;base64,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" width="768" /></p>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##    lsmean
+##     &lt;dbl&gt;
+## 1 250189.</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 27000</code></pre>
@@ -2664,6 +2725,13 @@ lst &lt;- m.lstk %&gt;%
 
 tableT &lt;- full_join(mean, lst, by = c(&quot;Diagnostic&quot;)) %&gt;%
   mutate(percent = Age.trend*100/abs(lsmean), Variable = &quot;T_shiftc&quot;)</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   2.48</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 0.1</code></pre>
@@ -2747,13 +2815,20 @@ m.lstk &lt;- as_tibble(m.lstk)
 
 tableAT &lt;- full_join(mean, lst, by = c(&quot;Diagnostic&quot;)) %&gt;%
   mutate(percent = Age.trend*100/abs(lsmean), Variable = &quot;AT_shiftc&quot;)</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##    lsmean
+##     &lt;dbl&gt;
+## 1 100795.</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
-<pre><code>## [1] 9600</code></pre>
+<pre><code>## [1] 2900</code></pre>
 <p>Type B error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
 <pre><code>## (Intercept) 
-##           0</code></pre>
+##       6e-07</code></pre>
 </div>
 <div id="exposedarea-age-1" class="section level3" number="5.6.5">
 <h3><span class="header-section-number">5.6.5</span> ExposedArea ~ Age</h3>
@@ -2802,6 +2877,13 @@ m.lstk &lt;- as_tibble(m.lstk)
      TX = paste(signif(Age.trend, 2), &quot;±&quot;, signif(SE, 2)))
 
 tableAE &lt;- full_join(mean, lst, by = c(&quot;Diagnostic&quot;)) %&gt;% mutate(percent = Age.trend*100/abs(lsmean), Variable = &quot;AE_shiftc&quot;)</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1 38667.</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 2900</code></pre>
@@ -2859,6 +2941,13 @@ lst &lt;- m.lstk %&gt;%
 
 tableGI &lt;- full_join(mean, lst, by = c(&quot;Diagnostic&quot;)) %&gt;%
   mutate(percent = Age.trend*100/abs(lsmean), Variable = &quot;localGI_shiftc&quot;)</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   2.60</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
 <pre><code>## [1] 0.096</code></pre>
@@ -2911,6 +3000,13 @@ coefs</code></pre>
 ## Age              -0.0008599766 8.788218e-06   -97.85563   0
 ## DiagnosticAD     -0.0870584281 4.709304e-03   -18.48647   0
 ## Age:DiagnosticAD  0.0008939612 6.267857e-05    14.26263   0</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1 -0.535</code></pre>
 <p>Mean values:</p>
 <pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
 pairs_means &lt;- pairs(mean) 
@@ -2948,16 +3044,16 @@ p.value
 CTL - AD
 </td>
 <td style="text-align:right;">
-0.0423146
+-0.1403122
 </td>
 <td style="text-align:right;">
-0.0016447
+0.0121857
 </td>
 <td style="text-align:right;">
 Inf
 </td>
 <td style="text-align:right;">
-25.72712
+-11.51445
 </td>
 <td style="text-align:right;">
 0
@@ -2966,7 +3062,7 @@ Inf
 </tbody>
 </table>
 <pre class="r"><code>paste(&quot;Difference in pct &quot;, as_tibble(pairs_means)[2]*100/mean$lsmean[1])</code></pre>
-<pre><code>## [1] &quot;Difference in pct  -7.91394490809058&quot;</code></pre>
+<pre><code>## [1] &quot;Difference in pct  -1.53044891669301&quot;</code></pre>
 <p>Trends:</p>
 <pre class="r"><code>m.lstk &lt;- lstrends(m.1, ~ Diagnostic, var=&quot;Age&quot;)
 pairs_trends &lt;- pairs(m.lstk) 
@@ -3052,7 +3148,7 @@ fig_K_age_c &lt;- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape =
     axis.text = element_text(size = 10), text = element_text(size = 10))</code></pre>
 <p>Natural fluctuation error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
-<pre><code>## [1] 0.016</code></pre>
+<pre><code>## [1] 0.12</code></pre>
 <p>Type B error:</p>
 <pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
 <pre><code>## (Intercept) 
@@ -3102,6 +3198,13 @@ coefs</code></pre>
 ## Age               0.001606360 6.511088e-05   24.671142 0.000000e+00
 ## DiagnosticAD      0.207341356 3.489069e-02    5.942599 2.805383e-09
 ## Age:DiagnosticAD -0.001339213 4.643782e-04   -2.883885 3.928021e-03</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   9.17</code></pre>
 <p>Mean values:</p>
 <pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
 pairs_means &lt;- pairs(mean) 
@@ -3293,6 +3396,13 @@ coefs</code></pre>
 ## Age              -0.003074501 4.396583e-05  -69.929319 0.000000e+00
 ## DiagnosticAD     -0.193800114 2.355978e-02   -8.225888 2.220446e-16
 ## Age:DiagnosticAD  0.001701526 3.135693e-04    5.426315 5.752943e-08</code></pre>
+<p>Mean value:</p>
+<pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
+as_tibble(mean)[1,2]</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   lsmean
+##    &lt;dbl&gt;
+## 1   10.4</code></pre>
 <p>Mean values:</p>
 <pre class="r"><code>mean &lt;- lsmeans(m.1, ~ Diagnostic, var=&quot;Age&quot;)
 pairs_means &lt;- pairs(mean) 
@@ -3499,10 +3609,10 @@ AE_shiftc
 K_shiftc
 </td>
 <td style="text-align:left;">
--0.00086 ± 8.8e-06 ( -0.16 )
+-0.00086 ± 8.8e-06 ( -0.0094 )
 </td>
 <td style="text-align:left;">
-3.4e-05 ± 6.2e-05 ( 0.0059 )
+3.4e-05 ± 6.2e-05 ( 0.00037 )
 </td>
 </tr>
 <tr>

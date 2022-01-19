@@ -1,0 +1,377 @@
+---
+title: "Manuscript 2 from Fernanda Hansen P. de Moraes Thesis - Cortical folding alterations in humans due to aging and diseases"
+author: "Fernanda Hansen Pacheco de Moraes"
+date: "18 jan 2022"
+output:
+  html_document: 
+    fig_caption: yes
+    fig_width: 8
+    number_sections: yes
+    theme: paper
+    toc: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+Description of the procedures and analysis present in Manuscript 2,
+**Establishing a baseline for human cortical folding morphological variables: a multicenter study**, at the Doctorate Thesis presented
+to the Programa de Pós-Graduação em Ciências Médicas at the Instituto
+D'Or de Pesquisa e Ensino as a partial requirement to obtain the
+Doctorate Degree.
+
+Part of the data used here cannot be shared due to restrictions of the
+Ethic Committee. Data can be shared upon reasonable request to the
+corresponding author. To fulfill these limitation, we will generate
+random data to simulate the results.
+
+Get in touch with us
+([fernandahmoraes\@gmail.com](mailto:fernandahmoraes@gmail.com){.email})
+in case any help is needed, our aim is to improve the code as needed!
+
+# RMARKDOWN AND R SETUP
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+```
+
+```{r working directory}
+setwd("~/GitHub/Typical-values")
+```
+
+```{r functions, message=FALSE, warning=FALSE}
+## define functions
+
+# test angular coeficinet versus theoretical value
+test_coef <- function(reg, coefnum, val){
+  co <- coef(summary(reg))
+  tstat <- (co[coefnum,1] - val)/co[coefnum,2]
+  2 * pt(abs(tstat), reg$df.residual, lower.tail = FALSE)
+}
+
+# wrap text
+wrapper <- function(x, ...) paste(strwrap(x, ...), collapse = "\n")
+```
+
+```{r call packages}
+library(readr)
+library(tidyverse)
+library(lubridate)
+library(ggpubr)
+library(kableExtra)
+library(broom)
+library(rstatix)
+
+```
+
+```{r} 
+# COLOR BLIND PALETTE WITH BLACK
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbbPalette2 <- c("#CC79A7", "#E69F00", "#56B4E9", "#0072B2", "#CC79A7", "#009E73", "#F0E442")
+```
+
+# set seed for random process
+
+```{r}
+set.seed(1)
+```
+
+```{r import files}
+dados <- read_csv("dados_AOMICID1000.csv")
+
+```
+# RESULTS
+
+## Data description
+
+```{r description, echo=FALSE}
+filter(dados, ROI == "hemisphere") %>%
+  group_by(Session) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2)),
+    AvgT =  paste(signif(mean(AvgThickness), 2), "±", signif(sd(AvgThickness), 2)),
+    AT =  paste(signif(mean(TotalArea), 2), "±", signif(sd(TotalArea), 2)),
+    AE =  paste(signif(mean(ExposedArea), 2), "±", signif(sd(ExposedArea), 2)),
+    K =  paste(signif(mean(K), 2), "±", signif(sd(K), 2)),
+    S =  paste(signif(mean(S), 2), "±", signif(sd(S), 2)),
+    I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
+) %>% kable(digits = 2) %>% kable_styling()
+
+subj_1 <- unique(filter(dados, Session == 1)$SUBJ)
+subj_2 <- unique(filter(dados, Session == 2)$SUBJ)
+subj_3 <- unique(filter(dados, Session == 3)$SUBJ)
+
+```
+
+## Model application
+
+```{r}
+amostra_Coef <- filter(dados, ROI == "hemisphere") %>% group_by(Session) %>%
+  do(fit_amostra = tidy(lm(1/2 * logAvgThickness + logTotalArea ~ logExposedArea, data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+  unnest(fit_amostra)
+
+amostra_Coef %>%
+  kable(digits = 2) %>%
+  kable_styling()
+
+```
+
+```{r}
+fig_A_1 <- ggplot(data = filter(dados, ROI == "hemisphere"), aes(log10(ExposedArea), 1 / 2 * log10(AvgThickness) + log10(TotalArea), color = as.factor(Session), fill = as.factor(Session))) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point() +
+  geom_line(aes(group= interaction(SUBJ, hemi)), color = "black", alpha = 0.8) + 
+  theme_pubr() +
+  guides(shape = "none") +
+  theme(
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10)
+  )  +
+  scale_fill_manual(values=cbbPalette2) +
+  scale_colour_manual(values=cbbPalette2)
+
+ggsave("fig_A_1.pdf", plot = fig_A_1, dpi=1200, width = 11, height = 11, units = "cm", device = "pdf")
+```
+
+```{r figure0, fig.cap="\\label{fig:figure0}Cortical folding model with the traced path for each hemisphere of each subject (gray line). The sample respects the model with slope alpha=1.23+-0.06, 95% confidence interval=(1.12,1.34).", fig.height=7.1, fig.width=7.1}
+fig_A_1
+```
+
+
+## Sessions
+
+```{r}
+
+ses_T <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = AvgThickness)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "AvgThickness [mm]", x = "Run")
+
+# filter(dados, ROI == "hemisphere") %>%
+#   group_by(Session) %>%
+#   identify_outliers(AvgThickness)
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = AvgThickness, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_K <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = K)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "K", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = K, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_S <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = S)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "S", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = S, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_I <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = I)) +
+    geom_boxplot()+
+      geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
+    theme_pubr() +
+    theme(
+        axis.title = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    )  + labs(y = "I", x = "Run")
+
+res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = I, wid = c(SUBJ, hemi), within = Session)
+get_anova_table(res.aov)
+
+ses_var <- ggarrange(ses_T, ses_K, ses_S, ses_I, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), font.label = list(size = 11))
+
+ggsave("ses_var.pdf", plot = ses_var, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
+
+```
+
+```{r figure1, fig.cap="\\label{fig:figure1}Trajectories for each hemisphere of each subject through the acquisition runs. There is no significant difference in means. (A) Average Cortical Thickness~[mm]: F(2, 198)=0.481, p=0.62, eta2[g]=0.000192; (B) K: F(2, 198)=0.138, p=0.87, eta2[g]=0.0000144; (C) S: F(2, 185)=0.352, p=0.69, eta2[g]=0.0000798; (D) I: F(2, 198)=0.775, p=0.46, eta2[g]=0.0000523.", fig.height=7.1, fig.width=7.1}
+ses_var
+```
+
+## SUBJ variance
+
+```{r}
+SD <- filter(dados, ROI == "hemisphere") %>% group_by(SUBJ, hemi) %>%
+  summarise(
+  meanT = mean(AvgThickness),
+  meanAT = mean(TotalArea),
+  meanAE = mean(ExposedArea),
+  meanGM = mean(GMvolume),
+  meanK =  mean(K),
+  meanS =  mean(S),
+  meanI =  mean(I),
+  meanGI = mean(localGI),
+  sd_T = sd(AvgThickness),
+  sd_AT = sd(TotalArea),
+  sd_AE = sd(ExposedArea),
+  sd_GM = sd(GMvolume),
+  sd_K = sd(K),
+  sd_S = sd(S),
+  sd_I = sd(I),
+  sd_GI = sd(localGI),
+  SD_percent_T = sd_T*100/abs(meanT),
+  SD_percent_AT = sd_AT*100/abs(meanAT),
+  SD_percent_AE = sd_AE*100/abs(meanAE),
+  SD_percent_GM = sd_GM*100/abs(meanGM),
+  SD_percent_K = sd_K*100/abs(meanK),
+  SD_percent_S = sd_S*100/abs(meanS),
+  SD_percent_I = sd_I*100/abs(meanI),
+  SD_percent_GI = sd_GI*100/abs(meanGI)
+  )
+
+SD %>%
+  summarise(
+  N = n_distinct(SUBJ),
+  meanT = mean(meanT),
+  meanAT = mean(meanAT),
+  meanAE = mean(meanAE),
+  meanGM = mean(meanGM),
+  meanK =  mean(meanK),
+  meanS =  mean(meanS),
+  meanI =  mean(meanI),
+  meanGI = mean(meanGI),
+  sd_T = mean(sd_T),
+  sd_AT = mean(sd_AT),
+  sd_AE = mean(sd_AE),
+  sd_GM = mean(sd_GM),
+  sd_K = mean(sd_K),
+  sd_S = mean(sd_S),
+  sd_I = mean(sd_I),
+  sd_GI = mean(sd_GI)
+  ) %>%
+  summarise(
+  meanT = signif(mean(meanT),2),
+  meanAT = signif(mean(meanAT),2),
+  meanAE = signif(mean(meanAE),2),
+  meanGM = signif(mean(meanGM),2),
+  meanK =  signif(mean(meanK),2),
+  meanS =  signif(mean(meanS),2),
+  meanI =  signif(mean(meanI),2),
+  meanGI = signif(mean(meanGI),2),
+  sd_T = signif(mean(sd_T),2),
+  sd_AT = signif(mean(sd_AT),2),
+  sd_AE = signif(mean(sd_AE),2),
+  sd_GM = signif(mean(sd_GM),2),
+  sd_K = signif(mean(sd_K),2),
+  sd_S = signif(mean(sd_S),2),
+  sd_I = signif(mean(sd_I),2),
+  sd_GI = signif(mean(sd_GI),2)
+  # ,
+  # SD_percent_T = sd_T*100/abs(meanT),
+  # SD_percent_AT = sd_AT*100/abs(meanAT),
+  # SD_percent_AE = sd_AE*100/abs(meanAE),
+  # SD_percent_GM = sd_GM*100/abs(meanGM),
+  # SD_percent_K = sd_K*100/abs(meanK),
+  # SD_percent_S = sd_S*100/abs(meanS),
+  # SD_percent_I = sd_I*100/abs(meanI),
+  # SD_percent_GI = sd_GI*100/abs
+  )
+# %>%
+#   kable() %>%
+#   kable_styling()
+
+# paste("Desvio padrão médio de AvgT = ", signif(mean(SD$sd_T),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_T),2))
+# paste("Desvio padrão médio de K = ", signif(mean(SD$sd_K),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_K),2))
+# paste("Desvio padrão médio de S = ", signif(mean(SD$sd_S),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_S),2))
+# paste("Desvio padrão médio de I = ", signif(mean(SD$sd_I),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_I),2))
+# paste("Desvio padrão médio de GI = ", signif(mean(SD$sd_GI),2), ", desvio padrao do desvio padrão = ", signif(sd(SD$sd_GI),2))
+
+```
+
+```{r}
+sd_T <- ggplot(SD, aes(x = sd_T)) +
+    geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_T))) +
+    geom_vline(aes(xintercept = mean(sd_T) - sd(sd_T)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_T) + sd(sd_T)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+  labs(x = "SD - Average Cortical Thickness [mm]") +
+    theme_pubr() + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_GI <- ggplot(SD, aes(x = sd_GI)) +
+    geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_GI))) +
+    geom_vline(aes(xintercept = mean(sd_GI) - sd(sd_GI)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_GI) + sd(sd_GI)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+  labs(x = "SD - Average Cortical Thickness [mm]") +
+    theme_pubr() + 
+    theme(axis.title = element_text(size = 11),
+          axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_K <- ggplot(SD, aes(x = sd_K, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_K))) +
+      geom_vline(aes(xintercept = mean(sd_K) - sd(sd_K)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_K) + sd(sd_K)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+    labs(x = "SD - K") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_S <- ggplot(SD, aes(x = sd_S, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_S))) +
+        geom_vline(aes(xintercept = mean(sd_S) - sd(sd_S)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_S) + sd(sd_S)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+      labs(x = "SD - S") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd_I <- ggplot(SD, aes(x = sd_I, alpha = 0.5)) +
+  geom_histogram(aes(alpha = 0.5)) +
+  geom_vline(aes(xintercept = mean(sd_I))) +
+        geom_vline(aes(xintercept = mean(sd_I) - sd(sd_I)), linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(sd_I) + sd(sd_I)), linetype = "dashed") +
+  guides(alpha = FALSE) +
+      labs(x = "SD - I") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+sd <- ggarrange(sd_T, sd_K, sd_S, sd_I, nrow = 2, ncol = 2, labels = c("A", "B", "C", "D"), font.label = list(size = 11))
+
+ggsave("sd.pdf", plot = sd, dpi=1200, width = 18, height = 18, units = "cm", device = "pdf")
+```
+
+
+```{r figure2, fig.cap="\\label{fig:figure2}Standard Deviation (SD) distribution for each variable. The solid line represents the mean value, and the dashed line the standard deviation of the distribution. (A) Average Cortical Thickness: 0.019+-0.013~mm; (B) K: 0.0017+-0.0012; (C) S: 0.014+-0.01; (D) I: 0.0064+-0.0043.", fig.height=7.1, fig.width=7.1}
+
+sd
+```
+
