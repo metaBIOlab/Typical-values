@@ -54,6 +54,13 @@ test_coef <- function(reg, coefnum, val){
 
 # wrap text
 wrapper <- function(x, ...) paste(strwrap(x, ...), collapse = "\n")
+
+is_outlier <- function(x, coef = 10) {
+  stopifnot(is.numeric(x))
+  y <- grDevices::boxplot.stats(x, coef = coef)$out
+  x <- x %in% y
+  return(x)
+}
 ```
 
 ```{r call packages}
@@ -68,7 +75,6 @@ library(lsmeans)
 library(MuMIn)
 library(arm)
 library(effects)
-library(qpcR)
 
 ```
 

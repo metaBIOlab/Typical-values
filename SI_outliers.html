@@ -189,16 +189,17 @@ pre code {
 <li><a href="#results"><span class="toc-section-number">5</span> RESULTS</a>
 <ul>
 <li><a href="#data-description"><span class="toc-section-number">5.1</span> Data description</a></li>
-<li><a href="#linear-mixed-models-summary"><span class="toc-section-number">5.2</span> Linear mixed models summary</a>
+<li><a href="#uncertainties-estimation-for-baseline"><span class="toc-section-number">5.2</span> Uncertainties estimation for baseline</a>
 <ul>
-<li><a href="#gm-volume-age"><span class="toc-section-number">5.2.1</span> GM volume ~ Age</a></li>
-<li><a href="#avgthickness-age"><span class="toc-section-number">5.2.2</span> AvgThickness ~ Age</a></li>
-<li><a href="#totalarea-age"><span class="toc-section-number">5.2.3</span> TotalArea ~ Age</a></li>
-<li><a href="#exposedarea-age"><span class="toc-section-number">5.2.4</span> ExposedArea ~ Age</a></li>
-<li><a href="#gi-age"><span class="toc-section-number">5.2.5</span> GI ~ Age</a></li>
-<li><a href="#k-age"><span class="toc-section-number">5.2.6</span> K ~ Age</a></li>
-<li><a href="#s-age"><span class="toc-section-number">5.2.7</span> S ~ Age</a></li>
-<li><a href="#i-age"><span class="toc-section-number">5.2.8</span> I ~ Age</a></li>
+<li><a href="#k-age"><span class="toc-section-number">5.2.1</span> K ~ Age</a></li>
+<li><a href="#s-age"><span class="toc-section-number">5.2.2</span> S ~ Age</a></li>
+<li><a href="#i-age"><span class="toc-section-number">5.2.3</span> I ~ Age</a></li>
+</ul></li>
+<li><a href="#without-outliers"><span class="toc-section-number">5.3</span> Without outliers</a>
+<ul>
+<li><a href="#k-age-1"><span class="toc-section-number">5.3.1</span> K ~ Age</a></li>
+<li><a href="#s-age-1"><span class="toc-section-number">5.3.2</span> S ~ Age</a></li>
+<li><a href="#i-age-1"><span class="toc-section-number">5.3.3</span> I ~ Age</a></li>
 </ul></li>
 </ul></li>
 </ul>
@@ -220,7 +221,14 @@ test_coef &lt;- function(reg, coefnum, val){
 }
 
 # wrap text
-wrapper &lt;- function(x, ...) paste(strwrap(x, ...), collapse = &quot;\n&quot;)</code></pre>
+wrapper &lt;- function(x, ...) paste(strwrap(x, ...), collapse = &quot;\n&quot;)
+
+is_outlier &lt;- function(x, coef = 10) {
+  stopifnot(is.numeric(x))
+  y &lt;- grDevices::boxplot.stats(x, coef = coef)$out
+  x &lt;- x %in% y
+  return(x)
+}</code></pre>
 <pre class="r"><code>library(readr)
 library(tidyverse)
 library(lubridate)
@@ -533,24 +541,6 @@ age
 <th style="text-align:left;">
 age_range
 </th>
-<th style="text-align:left;">
-T
-</th>
-<th style="text-align:left;">
-AT
-</th>
-<th style="text-align:left;">
-AE
-</th>
-<th style="text-align:left;">
-K
-</th>
-<th style="text-align:left;">
-S
-</th>
-<th style="text-align:left;">
-I
-</th>
 </tr>
 </thead>
 <tbody>
@@ -570,24 +560,6 @@ CTL
 <td style="text-align:left;">
 56 ; 96
 </td>
-<td style="text-align:left;">
-2.4 ± 0.11
-</td>
-<td style="text-align:left;">
-97000 ± 8400
-</td>
-<td style="text-align:left;">
-39000 ± 2700
-</td>
-<td style="text-align:left;">
--0.56 ± 0.017
-</td>
-<td style="text-align:left;">
-9.2 ± 0.13
-</td>
-<td style="text-align:left;">
-10 ± 0.074
-</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -604,24 +576,6 @@ AD
 </td>
 <td style="text-align:left;">
 56 ; 92
-</td>
-<td style="text-align:left;">
-2.2 ± 0.14
-</td>
-<td style="text-align:left;">
-95000 ± 10000
-</td>
-<td style="text-align:left;">
-38000 ± 3300
-</td>
-<td style="text-align:left;">
--0.58 ± 0.023
-</td>
-<td style="text-align:left;">
-9.4 ± 0.15
-</td>
-<td style="text-align:left;">
-10 ± 0.11
 </td>
 </tr>
 <tr>
@@ -640,24 +594,6 @@ CTL
 <td style="text-align:left;">
 24 ; 76
 </td>
-<td style="text-align:left;">
-2.6 ± 0.15
-</td>
-<td style="text-align:left;">
-110000 ± 10000
-</td>
-<td style="text-align:left;">
-39000 ± 2700
-</td>
-<td style="text-align:left;">
--0.5 ± 0.023
-</td>
-<td style="text-align:left;">
-9.2 ± 0.13
-</td>
-<td style="text-align:left;">
-10 ± 0.094
-</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -674,24 +610,6 @@ CTL
 </td>
 <td style="text-align:left;">
 18 ; 26
-</td>
-<td style="text-align:left;">
-2.6 ± 0.084
-</td>
-<td style="text-align:left;">
-110000 ± 10000
-</td>
-<td style="text-align:left;">
-40000 ± 2700
-</td>
-<td style="text-align:left;">
--0.49 ± 0.014
-</td>
-<td style="text-align:left;">
-9.1 ± 0.094
-</td>
-<td style="text-align:left;">
-10 ± 0.078
 </td>
 </tr>
 <tr>
@@ -710,24 +628,6 @@ CTL
 <td style="text-align:left;">
 18 ; 26
 </td>
-<td style="text-align:left;">
-2.6 ± 0.089
-</td>
-<td style="text-align:left;">
-110000 ± 9100
-</td>
-<td style="text-align:left;">
-39000 ± 2700
-</td>
-<td style="text-align:left;">
--0.51 ± 0.013
-</td>
-<td style="text-align:left;">
-9.1 ± 0.093
-</td>
-<td style="text-align:left;">
-10 ± 0.078
-</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -744,24 +644,6 @@ CTL
 </td>
 <td style="text-align:left;">
 24 ; 37
-</td>
-<td style="text-align:left;">
-2.7 ± 0.09
-</td>
-<td style="text-align:left;">
-110000 ± 11000
-</td>
-<td style="text-align:left;">
-40000 ± 3000
-</td>
-<td style="text-align:left;">
--0.5 ± 0.013
-</td>
-<td style="text-align:left;">
-9.1 ± 0.11
-</td>
-<td style="text-align:left;">
-10 ± 0.082
 </td>
 </tr>
 <tr>
@@ -780,24 +662,6 @@ CTL
 <td style="text-align:left;">
 43 ; 80
 </td>
-<td style="text-align:left;">
-2.5 ± 0.099
-</td>
-<td style="text-align:left;">
-98000 ± 7800
-</td>
-<td style="text-align:left;">
-37000 ± 2400
-</td>
-<td style="text-align:left;">
--0.52 ± 0.014
-</td>
-<td style="text-align:left;">
-9.1 ± 0.1
-</td>
-<td style="text-align:left;">
-10 ± 0.072
-</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -814,24 +678,6 @@ AD
 </td>
 <td style="text-align:left;">
 63 ; 86
-</td>
-<td style="text-align:left;">
-2.4 ± 0.079
-</td>
-<td style="text-align:left;">
-95000 ± 9300
-</td>
-<td style="text-align:left;">
-37000 ± 3000
-</td>
-<td style="text-align:left;">
--0.55 ± 0.015
-</td>
-<td style="text-align:left;">
-9.2 ± 0.13
-</td>
-<td style="text-align:left;">
-10 ± 0.069
 </td>
 </tr>
 <tr>
@@ -850,24 +696,6 @@ CTL
 <td style="text-align:left;">
 20 ; 86
 </td>
-<td style="text-align:left;">
-2.5 ± 0.11
-</td>
-<td style="text-align:left;">
-97000 ± 10000
-</td>
-<td style="text-align:left;">
-39000 ± 3100
-</td>
-<td style="text-align:left;">
--0.56 ± 0.018
-</td>
-<td style="text-align:left;">
-9.2 ± 0.12
-</td>
-<td style="text-align:left;">
-10 ± 0.093
-</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -884,24 +712,6 @@ CTL
 </td>
 <td style="text-align:left;">
 20 ; 82
-</td>
-<td style="text-align:left;">
-2.5 ± 0.18
-</td>
-<td style="text-align:left;">
-97000 ± 11000
-</td>
-<td style="text-align:left;">
-39000 ± 3200
-</td>
-<td style="text-align:left;">
--0.55 ± 0.028
-</td>
-<td style="text-align:left;">
-9.2 ± 0.16
-</td>
-<td style="text-align:left;">
-10 ± 0.12
 </td>
 </tr>
 <tr>
@@ -920,24 +730,6 @@ CTL
 <td style="text-align:left;">
 20 ; 86
 </td>
-<td style="text-align:left;">
-2.5 ± 0.13
-</td>
-<td style="text-align:left;">
-92000 ± 11000
-</td>
-<td style="text-align:left;">
-38000 ± 3300
-</td>
-<td style="text-align:left;">
--0.56 ± 0.02
-</td>
-<td style="text-align:left;">
-9.1 ± 0.14
-</td>
-<td style="text-align:left;">
-10 ± 0.099
-</td>
 </tr>
 <tr>
 <td style="text-align:left;">
@@ -954,24 +746,6 @@ CTL
 </td>
 <td style="text-align:left;">
 4 ; 85
-</td>
-<td style="text-align:left;">
-2.5 ± 0.14
-</td>
-<td style="text-align:left;">
-110000 ± 11000
-</td>
-<td style="text-align:left;">
-40000 ± 2800
-</td>
-<td style="text-align:left;">
--0.52 ± 0.027
-</td>
-<td style="text-align:left;">
-9.2 ± 0.12
-</td>
-<td style="text-align:left;">
-10 ± 0.094
 </td>
 </tr>
 <tr>
@@ -990,230 +764,62 @@ CTL
 <td style="text-align:left;">
 18 ; 94
 </td>
+</tr>
+</tbody>
+</table>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Diagnostic
+</th>
+<th style="text-align:right;">
+N
+</th>
+<th style="text-align:left;">
+age
+</th>
+<th style="text-align:left;">
+age_range
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
 <td style="text-align:left;">
-2.3 ± 0.11
+CTL
+</td>
+<td style="text-align:right;">
+3095
 </td>
 <td style="text-align:left;">
-1e+05 ± 11000
+46 ± 23
 </td>
 <td style="text-align:left;">
-39000 ± 2900
+4 ; 96
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AD
+</td>
+<td style="text-align:right;">
+555
 </td>
 <td style="text-align:left;">
--0.55 ± 0.023
+75 ± 8
 </td>
 <td style="text-align:left;">
-9.3 ± 0.11
-</td>
-<td style="text-align:left;">
-10 ± 0.099
+56 ; 92
 </td>
 </tr>
 </tbody>
 </table>
 </div>
-<div id="linear-mixed-models-summary" class="section level2" number="5.2">
-<h2><span class="header-section-number">5.2</span> Linear mixed models summary</h2>
-<div id="gm-volume-age" class="section level3" number="5.2.1">
-<h3><span class="header-section-number">5.2.1</span> GM volume ~ Age</h3>
-<pre class="r"><code>m.1 &lt;- lme4::lmer(GMvolume ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
-<p>Model summary and R squared:</p>
-<pre class="r"><code>summary(m.1)</code></pre>
-<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: GMvolume ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
-##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
-## 
-## REML criterion at convergence: 183968.1
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -3.8395 -0.6727 -0.0320  0.6298  4.5351 
-## 
-## Random effects:
-##  Groups            Name        Variance  Std.Dev.
-##  Sample:Diagnostic (Intercept)  27722513  5265   
-##  Sample            (Intercept) 366049150 19132   
-##  Residual                      733577651 27085   
-## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
-## 
-## Fixed effects:
-##                   Estimate Std. Error t value
-## (Intercept)      303365.74    6119.08  49.577
-## Age               -1061.86      27.79 -38.216
-## DiagnosticAD     -67730.51    9855.71  -6.872
-## Age:DiagnosticAD    725.19     105.75   6.858
-## 
-## Correlation of Fixed Effects:
-##             (Intr) Age    DgnsAD
-## Age         -0.196              
-## DiagnostcAD -0.083  0.195       
-## Ag:DgnstcAD  0.052 -0.263 -0.809</code></pre>
-<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
-<pre><code>##            R2m       R2c
-## [1,] 0.3957362 0.6067994</code></pre>
-</div>
-<div id="avgthickness-age" class="section level3" number="5.2.2">
-<h3><span class="header-section-number">5.2.2</span> AvgThickness ~ Age</h3>
-<pre class="r"><code>m.1 &lt;- lme4::lmer(AvgThickness ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
-<p>Model summary and R squared:</p>
-<pre class="r"><code>summary(m.1)</code></pre>
-<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: 
-## AvgThickness ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
-##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
-## 
-## REML criterion at convergence: -13111.9
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -7.8038 -0.6167  0.0104  0.6495  3.4140 
-## 
-## Random effects:
-##  Groups            Name        Variance  Std.Dev.
-##  Sample:Diagnostic (Intercept) 0.0006026 0.02455 
-##  Sample            (Intercept) 0.0071880 0.08478 
-##  Residual                      0.0110146 0.10495 
-## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
-## 
-## Fixed effects:
-##                    Estimate Std. Error t value
-## (Intercept)       2.7038037  0.0270734  99.869
-## Age              -0.0044384  0.0001077 -41.194
-## DiagnosticAD     -0.3421007  0.0405587  -8.435
-## Age:DiagnosticAD  0.0029937  0.0004098   7.305
-## 
-## Correlation of Fixed Effects:
-##             (Intr) Age    DgnsAD
-## Age         -0.172              
-## DiagnostcAD -0.084  0.183       
-## Ag:DgnstcAD  0.045 -0.263 -0.762</code></pre>
-<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
-<pre><code>##            R2m       R2c
-## [1,] 0.4615061 0.6845916</code></pre>
-</div>
-<div id="totalarea-age" class="section level3" number="5.2.3">
-<h3><span class="header-section-number">5.2.3</span> TotalArea ~ Age</h3>
-<pre class="r"><code>m.1 &lt;- lme4::lmer(TotalArea ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
-<p>Model summary and R squared:</p>
-<pre class="r"><code>summary(m.1)</code></pre>
-<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: TotalArea ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
-##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
-## 
-## REML criterion at convergence: 167642
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -2.9066 -0.7162 -0.0476  0.6633  4.2777 
-## 
-## Random effects:
-##  Groups            Name        Variance Std.Dev.
-##  Sample:Diagnostic (Intercept)        0    0    
-##  Sample            (Intercept) 23918246 4891    
-##  Residual                      93180143 9653    
-## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
-## 
-## Fixed effects:
-##                    Estimate Std. Error t value
-## (Intercept)      113025.061   1543.436  73.229
-## Age                -244.189      9.866 -24.750
-## DiagnosticAD     -13184.422   2852.379  -4.622
-## Age:DiagnosticAD    152.485     37.675   4.047
-## 
-## Correlation of Fixed Effects:
-##             (Intr) Age    DgnsAD
-## Age         -0.277              
-## DiagnostcAD -0.073  0.259       
-## Ag:DgnstcAD  0.072 -0.263 -0.992
-## optimizer (nloptwrap) convergence code: 0 (OK)
-## boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
-<pre><code>##            R2m       R2c
-## [1,] 0.2353489 0.3915348</code></pre>
-</div>
-<div id="exposedarea-age" class="section level3" number="5.2.4">
-<h3><span class="header-section-number">5.2.4</span> ExposedArea ~ Age</h3>
-<pre class="r"><code>m.1 &lt;- lme4::lmer(ExposedArea ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
-<p>Model summary and R squared:</p>
-<pre class="r"><code>summary(m.1)</code></pre>
-<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: 
-## ExposedArea ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
-##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
-## 
-## REML criterion at convergence: 148576.9
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -2.8868 -0.7093 -0.0618  0.6706  3.8432 
-## 
-## Random effects:
-##  Groups            Name        Variance Std.Dev.
-##  Sample:Diagnostic (Intercept)       0     0.0  
-##  Sample            (Intercept)  279141   528.3  
-##  Residual                      8382585  2895.3  
-## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
-## 
-## Fixed effects:
-##                   Estimate Std. Error t value
-## (Intercept)      40714.770    207.022 196.669
-## Age                -40.602      2.859 -14.204
-## DiagnosticAD      -262.931    853.269  -0.308
-## Age:DiagnosticAD     1.535     11.275   0.136
-## 
-## Correlation of Fixed Effects:
-##             (Intr) Age    DgnsAD
-## Age         -0.597              
-## DiagnostcAD -0.151  0.249       
-## Ag:DgnstcAD  0.152 -0.255 -0.992
-## optimizer (nloptwrap) convergence code: 0 (OK)
-## boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
-<pre><code>##             R2m       R2c
-## [1,] 0.09982676 0.1288366</code></pre>
-</div>
-<div id="gi-age" class="section level3" number="5.2.5">
-<h3><span class="header-section-number">5.2.5</span> GI ~ Age</h3>
-<pre class="r"><code>m.1 &lt;- lme4::lmer(localGI ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
-<p>Model summary and R squared:</p>
-<pre class="r"><code>summary(m.1)</code></pre>
-<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
-## Formula: localGI ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
-##    Data: filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;)
-## 
-## REML criterion at convergence: -14689.7
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -3.7049 -0.6845 -0.0074  0.6784  6.4692 
-## 
-## Random effects:
-##  Groups            Name        Variance Std.Dev.
-##  Sample:Diagnostic (Intercept) 0.000000 0.00000 
-##  Sample            (Intercept) 0.012446 0.11156 
-##  Residual                      0.009017 0.09496 
-## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
-## 
-## Fixed effects:
-##                    Estimate Std. Error t value
-## (Intercept)       2.7763677  0.0339367   81.81
-## Age              -0.0034689  0.0000975  -35.58
-## DiagnosticAD     -0.3178661  0.0280689  -11.32
-## Age:DiagnosticAD  0.0037476  0.0003707   10.11
-## 
-## Correlation of Fixed Effects:
-##             (Intr) Age    DgnsAD
-## Age         -0.124              
-## DiagnostcAD -0.033  0.260       
-## Ag:DgnstcAD  0.033 -0.264 -0.992
-## optimizer (nloptwrap) convergence code: 0 (OK)
-## boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
-<pre><code>##            R2m       R2c
-## [1,] 0.2623413 0.6900971</code></pre>
-</div>
-<div id="k-age" class="section level3" number="5.2.6">
-<h3><span class="header-section-number">5.2.6</span> K ~ Age</h3>
+<div id="uncertainties-estimation-for-baseline" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Uncertainties estimation for baseline</h2>
+<div id="k-age" class="section level3" number="5.2.1">
+<h3><span class="header-section-number">5.2.1</span> K ~ Age</h3>
 <pre class="r"><code>m.1 &lt;- lme4::lmer(K ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
 <p>Model summary and R squared:</p>
 <pre class="r"><code>summary(m.1)</code></pre>
@@ -1249,9 +855,16 @@ CTL
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.4372324 0.7897408</code></pre>
+<p>Natural fluctuation error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
+<pre><code>## [1] 0.016</code></pre>
+<p>Type B error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
+<pre><code>## (Intercept) 
+##       0.021</code></pre>
 </div>
-<div id="s-age" class="section level3" number="5.2.7">
-<h3><span class="header-section-number">5.2.7</span> S ~ Age</h3>
+<div id="s-age" class="section level3" number="5.2.2">
+<h3><span class="header-section-number">5.2.2</span> S ~ Age</h3>
 <pre class="r"><code>m.1 &lt;- lme4::lmer(S ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
 <p>Model summary and R squared:</p>
 <pre class="r"><code>summary(m.1)</code></pre>
@@ -1287,9 +900,16 @@ CTL
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m      R2c
 ## [1,] 0.1515722 0.399721</code></pre>
+<p>Natural fluctuation error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
+<pre><code>## [1] 0.12</code></pre>
+<p>Type B error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
+<pre><code>## (Intercept) 
+##       0.076</code></pre>
 </div>
-<div id="i-age" class="section level3" number="5.2.8">
-<h3><span class="header-section-number">5.2.8</span> I ~ Age</h3>
+<div id="i-age" class="section level3" number="5.2.3">
+<h3><span class="header-section-number">5.2.3</span> I ~ Age</h3>
 <pre class="r"><code>m.1 &lt;- lme4::lmer(I ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;))</code></pre>
 <p>Model summary and R squared:</p>
 <pre class="r"><code>summary(m.1)</code></pre>
@@ -1325,6 +945,172 @@ CTL
 <pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
 <pre><code>##            R2m       R2c
 ## [1,] 0.4505911 0.5554086</code></pre>
+<p>Natural fluctuation error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
+<pre><code>## [1] 0.082</code></pre>
+<p>Type B error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
+<pre><code>## (Intercept) 
+##       0.037</code></pre>
+</div>
+</div>
+<div id="without-outliers" class="section level2" number="5.3">
+<h2><span class="header-section-number">5.3</span> Without outliers</h2>
+<pre class="r"><code>filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;) %&gt;%
+  mutate(K_outlier = is_outlier(filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;)$K)) %&gt;%
+  filter(K_outlier == TRUE) %&gt;%
+  dplyr::select(c(SUBJ, Age, Gender, Diagnostic, Sample)) %&gt;% unique()</code></pre>
+<pre><code>## # A tibble: 0 x 5
+## # ... with 5 variables: SUBJ &lt;chr&gt;, Age &lt;dbl&gt;, Gender &lt;chr&gt;, Diagnostic &lt;fct&gt;,
+## #   Sample &lt;chr&gt;</code></pre>
+<pre class="r"><code>outlier_subj &lt;- filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;) %&gt;%
+  mutate(K_outlier = is_outlier(filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;)$K)) %&gt;%
+  filter(K_outlier == TRUE) %&gt;%
+  dplyr::select(c(SUBJ, Age, Gender, Diagnostic, Sample)) %&gt;% unique()
+
+paste(&quot;N outliers = &quot;, n_distinct((filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;) %&gt;%
+  mutate(K_outlier = is_outlier(filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;)$K)) %&gt;%
+  filter(K_outlier == TRUE))$SUBJ))</code></pre>
+<pre><code>## [1] &quot;N outliers =  0&quot;</code></pre>
+<pre class="r"><code>dados_datasetscomp_rate &lt;- filter(dados_datasetscomp, ROI == &quot;hemisphere&quot;, Diagnostic == &quot;CTL&quot; | Diagnostic == &quot;AD&quot;)  %&gt;%
+  anti_join(outlier_subj)
+
+dados_datasetscomp_rate$Diagnostic &lt;- factor(dados_datasetscomp_rate$Diagnostic, levels = c(&quot;CTL&quot;,&quot;AD&quot;))
+dados_datasetscomp_rate$Sample &lt;- as.factor(dados_datasetscomp_rate$Sample)</code></pre>
+<div id="k-age-1" class="section level3" number="5.3.1">
+<h3><span class="header-section-number">5.3.1</span> K ~ Age</h3>
+<pre class="r"><code>m.1 &lt;- lme4::lmer(K ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp_rate, ROI == &quot;hemisphere&quot;))</code></pre>
+<p>Model summary and R squared:</p>
+<pre class="r"><code>summary(m.1)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: K ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+##    Data: filter(dados_datasetscomp_rate, ROI == &quot;hemisphere&quot;)
+## 
+## REML criterion at convergence: -42555
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -6.9733 -0.6065  0.0381  0.6446  5.2725 
+## 
+## Random effects:
+##  Groups            Name        Variance  Std.Dev.
+##  Sample:Diagnostic (Intercept) 4.607e-06 0.002146
+##  Sample            (Intercept) 4.410e-04 0.021001
+##  Residual                      2.658e-04 0.016304
+## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
+## 
+## Fixed effects:
+##                    Estimate Std. Error t value
+## (Intercept)      -4.920e-01  6.412e-03  -76.73
+## Age              -8.612e-04  1.675e-05  -51.40
+## DiagnosticAD     -8.439e-02  5.444e-03  -15.50
+## Age:DiagnosticAD  8.855e-04  6.366e-05   13.91
+## 
+## Correlation of Fixed Effects:
+##             (Intr) Age    DgnsAD
+## Age         -0.113              
+## DiagnostcAD -0.039  0.221       
+## Ag:DgnstcAD  0.030 -0.264 -0.882</code></pre>
+<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
+<pre><code>##            R2m       R2c
+## [1,] 0.4372324 0.7897408</code></pre>
+<p>Natural fluctuation error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
+<pre><code>## [1] 0.016</code></pre>
+<p>Type B error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
+<pre><code>## (Intercept) 
+##       0.021</code></pre>
+</div>
+<div id="s-age-1" class="section level3" number="5.3.2">
+<h3><span class="header-section-number">5.3.2</span> S ~ Age</h3>
+<pre class="r"><code>m.1 &lt;- lme4::lmer(S ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp_rate, ROI == &quot;hemisphere&quot;))</code></pre>
+<p>Model summary and R squared:</p>
+<pre class="r"><code>summary(m.1)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: S ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+##    Data: filter(dados_datasetscomp_rate, ROI == &quot;hemisphere&quot;)
+## 
+## REML criterion at convergence: -10789.6
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -3.5837 -0.6903 -0.0315  0.6406  5.5519 
+## 
+## Random effects:
+##  Groups            Name        Variance  Std.Dev.
+##  Sample:Diagnostic (Intercept) 0.0003168 0.01780 
+##  Sample            (Intercept) 0.0057953 0.07613 
+##  Residual                      0.0147855 0.12160 
+## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
+## 
+## Fixed effects:
+##                    Estimate Std. Error t value
+## (Intercept)       9.0840260  0.0242645 374.375
+## Age               0.0017030  0.0001246  13.664
+## DiagnosticAD      0.1969053  0.0413152   4.766
+## Age:DiagnosticAD -0.0013879  0.0004747  -2.924
+## 
+## Correlation of Fixed Effects:
+##             (Intr) Age    DgnsAD
+## Age         -0.222              
+## DiagnostcAD -0.079  0.212       
+## Ag:DgnstcAD  0.058 -0.263 -0.866</code></pre>
+<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
+<pre><code>##            R2m      R2c
+## [1,] 0.1515722 0.399721</code></pre>
+<p>Natural fluctuation error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
+<pre><code>## [1] 0.12</code></pre>
+<p>Type B error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
+<pre><code>## (Intercept) 
+##       0.076</code></pre>
+</div>
+<div id="i-age-1" class="section level3" number="5.3.3">
+<h3><span class="header-section-number">5.3.3</span> I ~ Age</h3>
+<pre class="r"><code>m.1 &lt;- lme4::lmer(I ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp_rate, ROI == &quot;hemisphere&quot;))</code></pre>
+<p>Model summary and R squared:</p>
+<pre class="r"><code>summary(m.1)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: I ~ Age * Diagnostic + (1 | Sample) + (1 | Sample:Diagnostic)
+##    Data: filter(dados_datasetscomp_rate, ROI == &quot;hemisphere&quot;)
+## 
+## REML criterion at convergence: -17050
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -4.9306 -0.6593 -0.0005  0.6762  3.2113 
+## 
+## Random effects:
+##  Groups            Name        Variance  Std.Dev.
+##  Sample:Diagnostic (Intercept) 0.0001859 0.01364 
+##  Sample            (Intercept) 0.0013945 0.03734 
+##  Residual                      0.0067038 0.08188 
+## Number of obs: 7912, groups:  Sample:Diagnostic, 13; Sample, 11
+## 
+## Fixed effects:
+##                    Estimate Std. Error t value
+## (Intercept)       1.053e+01  1.259e-02 836.069
+## Age              -3.118e-03  8.371e-05 -37.254
+## DiagnosticAD     -1.829e-01  2.848e-02  -6.421
+## Age:DiagnosticAD  1.747e-03  3.196e-04   5.467
+## 
+## Correlation of Fixed Effects:
+##             (Intr) Age    DgnsAD
+## Age         -0.287              
+## DiagnostcAD -0.109  0.200       
+## Ag:DgnstcAD  0.075 -0.262 -0.844</code></pre>
+<pre class="r"><code>r.squaredGLMM(m.1)</code></pre>
+<pre><code>##            R2m       R2c
+## [1,] 0.4505911 0.5554086</code></pre>
+<p>Natural fluctuation error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$data,2)</code></pre>
+<pre><code>## [1] 0.082</code></pre>
+<p>Type B error:</p>
+<pre class="r"><code>signif(sigma.hat(m.1)$sigma$Sample,2)</code></pre>
+<pre><code>## (Intercept) 
+##       0.037</code></pre>
 </div>
 </div>
 </div>
