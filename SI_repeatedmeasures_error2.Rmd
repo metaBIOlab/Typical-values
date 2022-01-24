@@ -148,7 +148,7 @@ fig_A_1
 
 ```{r}
 
-ses_T <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = AvgThickness)) +
+ses_T <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = as.factor(Session), y = AvgThickness)) +
     geom_boxplot()+
       geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
     theme_pubr() +
@@ -166,7 +166,7 @@ ses_T <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = AvgThic
 res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = AvgThickness, wid = c(SUBJ, hemi), within = Session)
 get_anova_table(res.aov)
 
-ses_K <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = K)) +
+ses_K <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = as.factor(Session), y = K)) +
     geom_boxplot()+
       geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
     theme_pubr() +
@@ -180,7 +180,7 @@ ses_K <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = K)) +
 res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = K, wid = c(SUBJ, hemi), within = Session)
 get_anova_table(res.aov)
 
-ses_S <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = S)) +
+ses_S <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = as.factor(Session), y = S)) +
     geom_boxplot()+
       geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
     theme_pubr() +
@@ -194,7 +194,7 @@ ses_S <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = S)) +
 res.aov <- anova_test(data = filter(dados, ROI == "hemisphere"), dv = S, wid = c(SUBJ, hemi), within = Session)
 get_anova_table(res.aov)
 
-ses_I <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = I)) +
+ses_I <- ggplot(filter(dados, ROI == "hemisphere"), aes(x = as.factor(Session), y = I)) +
     geom_boxplot()+
       geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
     theme_pubr() +
