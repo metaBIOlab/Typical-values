@@ -40,6 +40,12 @@ dados <- dados %>% filter(SUBJ == "sub-0001"| SUBJ == "sub-0002"| SUBJ == "sub-0
 write.csv(dados,"dados_AOMICID1000.csv")
 ```
 
+```{r} 
+# COLOR BLIND PALETTE WITH BLACK
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbbPalette2 <- c("#56B4E9", "#E69F00", "#CC79A7", "#56B4E9", "#D55E00", "#0072B2", "#009E73", "#F0E442")
+```
+
 # Datasets description
 
 ```{r description, echo=FALSE}
@@ -335,9 +341,13 @@ fig_A_1 <- ggplot(data = filter(dados, ROI == "hemisphere"), aes(log10(ExposedAr
     axis.title = element_text(size = 11),
     axis.text = element_text(size = 10),
     text = element_text(size = 10)
-  )
+  ) +
+  scale_fill_manual(values=cbbPalette2) +
+  scale_colour_manual(values=cbbPalette2)
 
 ggsave("fig_A_1.pdf", plot = fig_A_1, dpi=1200, width = 11, height = 11, units = "cm", device = "pdf")
+
+fig_A_1
 
 ggplot(
   filter(dados, ROI == "hemisphere"),
@@ -389,67 +399,6 @@ ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = K_age_decay)) +
         axis.text.x = element_text(angle = 45, hjust = 1, size=9)
     )  + labs(y = "K (age corrected)")
 
-# ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = 10^Knorm)) +
-#     geom_boxplot()+
-#       geom_line(aes(group= interaction(SUBJ, hemi)), color = "grey", alpha = 0.8) + 
-#     theme_pubr() +
-#     theme(
-#         axis.title = element_text(size = 11),
-#         axis.text = element_text(size = 10),
-#         text = element_text(size = 10),
-#         axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-#     )  + labs(y = "10^K norm") + ylim(0, 0.6)
-
-# ggplot(filter(dados, ROI == "hemisphere"), aes(x = Session, y = 10^Knorm_age_decay)) +
-#     geom_boxplot()+
-#     theme_pubr() +
-#     theme(
-#         axis.title = element_text(size = 11),
-#         axis.text = element_text(size = 10),
-#         text = element_text(size = 10),
-#         axis.text.x = element_text(angle = 45, hjust = 1, size=9)
-#     )  + labs(y = "10^K norm (age corrected)") + ylim(0, 0.6)
-
-mean_K_I_S <-
-  filter(dados, ROI == "hemisphere") %>% group_by(Session) %>% summarise(
-    mean.K = mean(Knorm, na.rm = TRUE),
-    SD_K = sd(Knorm, na.rm = TRUE),
-    mean.I = mean(I, na.rm = TRUE),
-    SD_I = sd(I, na.rm = TRUE),
-    mean.S = mean(Snorm, na.rm = TRUE),
-    SD_S = sd(Snorm, na.rm = TRUE)
-    )
-
-plot_ly(
-mean_K_I_S,
-  x = ~ mean.K,
-  z =  ~ mean.S,
-  y =  ~ mean.I,
-  color = ~ Session,
-text =  ~ Session,
-  type = "scatter3d",
-  mode = 'markers+text'
-) %>% layout(scene = list(
-  xaxis = list(title = 'Knorm'),
-  zaxis = list(title = 'Snorm', scaleanchor = "x"),
-  yaxis = list(title = 'Inorm', scaleanchor = "x")
-))
-
-
-plot_ly(
- filter(dados, ROI == "hemisphere"),
-  x = ~ Knorm,
-  z =  ~ Snorm,
-  y =  ~ I,
-  color = ~ Session,
-text =  ~ Session,
-  type = "scatter3d",
-  mode = 'markers+text'
-) %>% layout(scene = list(
-  xaxis = list(title = 'Knorm'),
-  zaxis = list(title = 'Snorm', scaleanchor = "x"),
-  yaxis = list(title = 'Inorm', scaleanchor = "x")
-))
 
 ```
 
@@ -713,7 +662,7 @@ N_SUBJ <- filter(dados, ROI == "hemisphere") %>% group_by(Session) %>% summarise
 
 m.1 <- lme4::lmer(AvgThickness ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
 
-performance::check_model(m.1)
+# # performance::::::check_model(m.1)
 
 anova(m.1)
 summary(m.1)
@@ -783,7 +732,7 @@ N_SUBJ <- filter(dados, ROI == "hemisphere") %>% group_by(Session) %>% summarise
 
 m.1 <- lme4::lmer(K ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
 
-performance::check_model(m.1)
+# # performance::::::check_model(m.1)
 
 anova(m.1)
 summary(m.1)
@@ -852,7 +801,7 @@ sampleeff.K <- ggplot(filter(re, grpvar == "SUBJ"), aes(y = condval, x = grp)) +
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(S ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
 
-performance::check_model(m.1)
+# performance::::check_model(m.1)
 
 anova(m.1)
 summary(m.1)
@@ -921,7 +870,7 @@ sampleeff.S <- ggplot(filter(re, grpvar == "SUBJ"), aes(y = condval, x = grp)) +
 ```{r echo=FALSE}
 m.1 <- lme4::lmer(I ~ Session + (1|SUBJ), data = filter(dados, ROI == "hemisphere"))
 
-performance::check_model(m.1)
+# performance::::check_model(m.1)
 
 anova(m.1)
 summary(m.1)
