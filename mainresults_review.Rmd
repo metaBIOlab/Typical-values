@@ -1,0 +1,1978 @@
+---
+title: "Manuscript 2 from Fernanda Hansen P. de Moraes Thesis - Cortical folding alterations in humans due to aging and diseases"
+author: "Fernanda Hansen Pacheco de Moraes"
+date: "18 jan 2022"
+output:
+  html_document: 
+    fig_caption: yes
+    fig_width: 8
+    number_sections: yes
+    theme: paper
+    toc: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+Description of the procedures and analysis present in Manuscript 2,
+**Establishing a baseline for human cortical folding morphological variables: a multicenter study**, at the Doctorate Thesis presented
+to the Programa de Pós-Graduação em Ciências Médicas at the Instituto
+D'Or de Pesquisa e Ensino as a partial requirement to obtain the
+Doctorate Degree.
+
+Part of the data used here cannot be shared due to restrictions of the
+Ethic Committee. Data can be shared upon reasonable request to the
+corresponding author. To fulfill these limitation, we will generate
+random data to simulate the results.
+
+Get in touch with us
+([fernandahmoraes\@gmail.com](mailto:fernandahmoraes@gmail.com){.email})
+in case any help is needed, our aim is to improve the code as needed!
+
+# RMARKDOWN AND R SETUP
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+```
+
+```{r working directory}
+setwd("D:/GitHub/Typical-values")
+```
+
+```{r functions, message=FALSE, warning=FALSE}
+## define functions
+
+# test angular coeficinet versus theoretical value
+test_coef <- function(reg, coefnum, val){
+  co <- coef(summary(reg))
+  tstat <- (co[coefnum,1] - val)/co[coefnum,2]
+  2 * pt(abs(tstat), reg$df.residual, lower.tail = FALSE)
+}
+
+# wrap text
+wrapper <- function(x, ...) paste(strwrap(x, ...), collapse = "\n")
+```
+
+```{r call packages}
+library(readr)
+library(tidyverse)
+library(lubridate)
+library(ggpubr)
+library(kableExtra)
+library(broom)
+library(lme4)
+library(lsmeans)
+library(MuMIn)
+library(arm)
+library(effects)
+library(compute.es)
+
+```
+
+```{r} 
+# COLOR BLIND PALETTE WITH BLACK
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbbPalette2 <- c("#56B4E9", "#E69F00", "#CC79A7", "#56B4E9", "#D55E00", "#0072B2", "#009E73", "#F0E442")
+```
+
+# set seed for random process
+
+```{r}
+set.seed(1)
+```
+
+```{r import files}
+# dados_datasetscomp <- read_csv("dados_datasetscomp2.csv")
+dados_datasetscomp <- read_csv("data_typical_values.csv")
+
+dados_datasetscomp <- dados_datasetscomp %>%
+  filter(Sample != "HCP500r", Diagnostic != "MCI")
+
+```
+
+# DATA PREPARATION
+```{r create new variables}
+# estimate cortical folding variables
+dados_datasetscomp <- dados_datasetscomp %>%
+  mutate(
+    # create new variables
+    GMvolume = ifelse(!is.na(GMvolume),GMvolume,AvgThickness*TotalArea),
+    logAvgThickness = log10(AvgThickness),
+    logTotalArea = log10(TotalArea),
+    logExposedArea = log10(ExposedArea),
+    localGI = TotalArea / ExposedArea,
+    k = sqrt(AvgThickness) * TotalArea / (ExposedArea ^ 1.25),
+    K = 1 / 4 * log10(AvgThickness ^ 2)  + log10(TotalArea) - 5 / 4 * log10(ExposedArea),
+    S = 3 / 2 * log10(TotalArea) + 3 / 4 * log10(ExposedArea) - 9 /  4 * log10(AvgThickness ^
+                                                                                 2) ,
+    I = log10(TotalArea) + log10(ExposedArea) + log10(AvgThickness ^ 2),
+    # c = as.double(ifelse(
+    #   ROI == "hemisphere", NA, 4 * pi / GaussianCurvature
+    # )),
+    TotalArea_corrected = ifelse(ROI == "hemisphere", TotalArea, TotalArea * c),
+    ExposedArea_corrected = ifelse(ROI == "hemisphere", ExposedArea, ExposedArea * c),
+    logTotalArea_corrected = log10(TotalArea_corrected),
+    logExposedArea_corrected = log10(ExposedArea_corrected),
+    localGI_corrected = ifelse(
+      ROI == "hemisphere",
+      TotalArea / ExposedArea,
+      TotalArea_corrected / ExposedArea_corrected
+    ),
+    k_corrected = ifelse(
+      ROI == "hemisphere",
+      sqrt(AvgThickness) * log10(TotalArea) / (log10(ExposedArea) ^ 1.25),
+      sqrt(AvgThickness) * log10(TotalArea_corrected) / (log10(ExposedArea_corrected ^
+                                                                 1.25))
+    ),
+    K_corrected =  ifelse(
+      ROI == "hemisphere",
+      1 / 4 * log10(AvgThickness ^ 2) + log10(TotalArea) - 5 / 4 * log10(ExposedArea),
+      1 / 4 * log10(AvgThickness ^ 2) + log10(TotalArea_corrected) - 5 / 4 * log10(ExposedArea_corrected)
+    ),
+    I_corrected = ifelse(
+      ROI == "hemisphere",
+      log10(TotalArea) + log10(ExposedArea) + log10(AvgThickness ^ 2) ,
+      log10(TotalArea_corrected) + log10(ExposedArea_corrected) + log10(AvgThickness ^ 2)
+    ),
+    S_corrected = ifelse(
+      ROI == "hemisphere",
+      3 / 2 * log10(TotalArea) + 3 / 4 * log10(ExposedArea) - 9 /  4 * log10(AvgThickness ^ 2) ,
+      3 / 2 * log10(TotalArea_corrected) + 3 / 4 * log10(ExposedArea_corrected) - 9 /  4 * log10(AvgThickness ^ 2)
+    ),
+    Knorm = K_corrected / sqrt(1 + (1 / 4) ^ 2 + (5 / 4) ^ 2),
+    Snorm = S_corrected / sqrt((3 / 2) ^ 2 + (3 / 4) ^ 2 + (9 / 4) ^ 2),
+    Inorm = I_corrected / sqrt(1 ^ 2 + 1 ^ 2 + 1 ^ 1)
+  )
+
+# create age intervals
+dados_datasetscomp$Age_interval <- cut(dados_datasetscomp$Age,
+                                       breaks = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100),
+                                       right = FALSE,
+                                       include.lowest = TRUE)
+
+dados_datasetscomp$Age_interval10 <- cut(dados_datasetscomp$Age,
+                                         breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+                                         right = FALSE,
+                                         include.lowest = TRUE)
+```
+
+```{r data cleanup}
+dados_all <- dados_datasetscomp %>% filter(!is.na(logAvgThickness), ExposedArea != 0 | !is.na(localGI), !is.infinite(logExposedArea)) %>% 
+  droplevels()
+
+dados_datasetscomp <- dados_all
+
+dados_datasetscomp$Diagnostic <- as.factor(dados_datasetscomp$Diagnostic)
+dados_datasetscomp$Diagnostic <- relevel(dados_datasetscomp$Diagnostic, ref = "CTL")
+
+```
+
+# Deaging
+
+```{r deaging}
+# define age for deaging
+Age.cor = 25
+
+# DEAGING + HARMONIZATION FULL DATA ----
+
+dados_datasetscomp_rate <-
+  filter(dados_datasetscomp, Diagnostic == "CTL")
+
+dados_datasetscomp_rate$Sample <-
+  as.factor(dados_datasetscomp_rate$Sample)
+
+dados_datasetscomp_rate$ROI <-
+  factor(dados_datasetscomp_rate$ROI,
+         levels = c("hemisphere", "F", "O", "P", "T"))
+```
+
+## GM volume
+
+```{r}
+m.1 <-
+  lme4::lmer(GMvolume ~ Age * ROI + (1|Sample:ROI), data = dados_datasetscomp_rate)
+
+re <- as_tibble(ranef(m.1)) %>%
+  filter(grpvar == "Sample:ROI") %>%
+  mutate(
+    GM_shift = condval,
+    sd_GM_shift = condsd,
+    Sample = str_split(grp, pattern = ":", simplify = TRUE)[, 1],
+    ROI = str_split(grp, pattern = ":", simplify = TRUE)[, 2]
+  ) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
+
+Age.trend <- as_tibble(lstrends(m.1, ~ ROI, var = "Age")) %>%
+  mutate(Age.trend_GM = Age.trend) %>%
+  dplyr::select(c(ROI, Age.trend_GM))
+
+dados_datasetscomp <- full_join(dados_datasetscomp, Age.trend) %>%
+  full_join(re) %>%
+  mutate(
+    GMvolume_shiftc = GMvolume - GM_shift,
+    GMvolume_age_decay = GMvolume - Age.trend_GM * (Age - Age.cor),
+    GMvolume_age_decay_shiftc = GMvolume - GM_shift - Age.trend_GM *
+      (Age - Age.cor)
+  )
+```
+
+## AvgThickness
+
+```{r}
+m.1 <-
+  lme4::lmer(AvgThickness ~ Age * ROI + (1|Sample:ROI), data = dados_datasetscomp_rate)
+
+re <- as_tibble(ranef(m.1)) %>%
+  filter(grpvar == "Sample:ROI") %>%
+  mutate(
+    T_shift = condval,
+    sd_T_shift = condsd,
+    Sample = str_split(grp, pattern = ":", simplify = TRUE)[, 1],
+    ROI = str_split(grp, pattern = ":", simplify = TRUE)[, 2]
+  ) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
+
+Age.trend <- as_tibble(lstrends(m.1, ~ ROI, var = "Age")) %>%
+  mutate(Age.trend_T = Age.trend) %>%
+  dplyr::select(c(ROI, Age.trend_T))
+
+dados_datasetscomp <- full_join(dados_datasetscomp, Age.trend) %>%
+  full_join(re) %>%
+  mutate(
+    AvgThickness_shiftc = AvgThickness - T_shift,
+    AvgThickness_age_decay = AvgThickness - Age.trend_T * (Age - Age.cor),
+    AvgThickness_age_decay_shiftc = AvgThickness - T_shift - Age.trend_T *
+      (Age - Age.cor),
+    logAvgThickness_shiftc = log10(AvgThickness_shiftc),
+    logAvgThickness_age_decay = log10(AvgThickness_age_decay),
+    logAvgThickness_age_decay_shiftc = log10(AvgThickness_age_decay_shiftc)
+  )
+
+```
+
+## TotalArea
+
+```{r}
+m.1 <-
+  lme4::lmer(TotalArea_corrected ~ Age * ROI + (1 | Sample:ROI), data = dados_datasetscomp_rate)
+
+re <- as_tibble(ranef(m.1)) %>%
+  filter(grpvar == "Sample:ROI") %>%
+  mutate(
+    AT_shift = condval,
+    sd_AT_shift = condsd,
+    Sample = str_split(grp, pattern = ":", simplify = TRUE)[, 1],
+    ROI = str_split(grp, pattern = ":", simplify = TRUE)[, 2]
+  ) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
+
+Age.trend <-
+  as_tibble(lstrends(m.1, ~ ROI, var = "Age")) %>%
+  mutate(Age.trend_AT = Age.trend) %>%
+  dplyr::select(c(ROI, Age.trend_AT))
+
+dados_datasetscomp <- full_join(dados_datasetscomp, re) %>%
+  full_join(Age.trend) %>%
+  mutate(
+    TotalArea_shiftc = TotalArea_corrected - AT_shift,
+    TotalArea_age_decay = TotalArea_corrected - Age.trend_AT * (Age - Age.cor),
+    TotalArea_age_decay_shiftc = TotalArea_corrected - AT_shift - Age.trend_AT *
+      (Age - Age.cor),
+    logTotalArea_shiftc = log10(TotalArea_shiftc),
+    logTotalArea_age_decay = log10(TotalArea_age_decay),
+    logTotalArea_age_decay_shiftc = log10(TotalArea_age_decay_shiftc)
+  )
+
+```
+
+## ExposedArea
+
+```{r}
+m.1 <-
+  lme4::lmer(
+    ExposedArea_corrected  ~ Age * ROI + (1 | Sample:ROI), data = dados_datasetscomp_rate)
+
+re <- as_tibble(ranef(m.1)) %>%
+  filter(grpvar == "Sample:ROI") %>%
+  mutate(
+    AE_shift = condval,
+    sd_AE_shift = condsd,
+    Sample = str_split(grp, pattern = ":", simplify = TRUE)[, 1],
+    ROI = str_split(grp, pattern = ":", simplify = TRUE)[, 2]
+  ) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
+
+Age.trend <-
+  as_tibble(lstrends(m.1, ~ ROI, var = "Age")) %>%
+  mutate(Age.trend_AE = Age.trend) %>%
+  dplyr::select(c(ROI, Age.trend_AE))
+
+dados_datasetscomp <- full_join(dados_datasetscomp, re) %>%
+  full_join(Age.trend) %>%
+  mutate(
+    ExposedArea_shiftc = ExposedArea_corrected - AE_shift,
+    ExposedArea_age_decay = ExposedArea_corrected - Age.trend_AE * (Age - Age.cor),
+    ExposedArea_age_decay_shiftc = ExposedArea_corrected - AE_shift - Age.trend_AE * (Age - Age.cor),
+    logExposedArea_shiftc = log10(ExposedArea_shiftc),
+    logExposedArea_age_decay = log10(ExposedArea_age_decay),
+    logExposedArea_age_decay_shiftc = log10(ExposedArea_age_decay_shiftc)
+  )
+
+```
+
+## Lobes correction factor
+
+```{r}
+m.1 <-
+  lme4::lmer(c ~ Age * ROI + (1|Sample:ROI), data = dados_datasetscomp_rate)
+
+re <- as_tibble(ranef(m.1)) %>%
+  filter(grpvar == "Sample:ROI") %>%
+  mutate(
+    c_shift = condval,
+    sd_c_shift = condsd,
+    Sample = str_split(grp, pattern = ":", simplify = TRUE)[, 1],
+    ROI = str_split(grp, pattern = ":", simplify = TRUE)[, 2]
+  ) %>%
+  dplyr::select(-c(condval, grpvar, term, condsd, grp))
+
+Age.trend <- as_tibble(lstrends(m.1, ~ ROI, var = "Age")) %>%
+  mutate(Age.trend_c = Age.trend) %>%
+  dplyr::select(c(ROI, Age.trend_c))
+
+dados_datasetscomp <- full_join(dados_datasetscomp, Age.trend) %>%
+  full_join(re) %>%
+  mutate(
+    c_shiftc = c - c_shift,
+    c_age_decay = c - Age.trend_c * (Age - Age.cor),
+    c_age_decay_shiftc = c - c_shift - Age.trend_c *
+      (Age - Age.cor)
+  )
+
+```
+
+```{r}
+# ----
+dados_datasetscomp <- dados_datasetscomp %>%
+  mutate(
+    localGI_age_decay = TotalArea_age_decay/ExposedArea_age_decay,
+    localGI_shiftc = TotalArea_shiftc/ExposedArea_shiftc,
+    localGI_age_decay_shiftc = TotalArea_age_decay_shiftc/ExposedArea_age_decay_shiftc,
+    K_age_decay = log10(TotalArea_age_decay) + 1/4*log10(AvgThickness_age_decay^2) - 5/4*log10(ExposedArea_age_decay),
+    K_shiftc = log10(TotalArea_shiftc) + 1/4*log10(AvgThickness_shiftc^2) - 5/4*log10(ExposedArea_shiftc),
+    K_age_decay_shiftc = log10(TotalArea_age_decay_shiftc) + 1/4*log10(AvgThickness_age_decay_shiftc^2) - 5/4*log10(ExposedArea_age_decay_shiftc),
+    I_age_decay = log10(TotalArea_age_decay) + log10(ExposedArea_age_decay) + log10(AvgThickness_age_decay^2),
+    I_shiftc = log10(TotalArea_shiftc) + log10(ExposedArea_shiftc) + log10(AvgThickness_shiftc^2),
+    I_age_decay_shiftc = log10(TotalArea_age_decay_shiftc) + log10(ExposedArea_age_decay_shiftc) + log10(AvgThickness_age_decay_shiftc^2),
+    S_age_decay = 3/2*log10(TotalArea_age_decay) + 3/4*log10(ExposedArea_age_decay) - 9/4*log10(AvgThickness_age_decay^2),
+    S_shiftc = 3/2*log10(TotalArea_shiftc) + 3/4*log10(ExposedArea_shiftc) - 9/4*log10(AvgThickness_shiftc^2),
+    S_age_decay_shiftc = 3/2*log10(TotalArea_age_decay_shiftc) + 3/4*log10(ExposedArea_age_decay_shiftc) - 9/4*log10(AvgThickness_age_decay_shiftc^2),
+    Knorm_shiftc = K_shiftc / sqrt(1 + (1 / 4) ^ 2 + (5 / 2) ^ 2),
+    Snorm_shiftc = S_shiftc / sqrt((3 / 2) ^ 2 + (3 / 4) ^ 2 + (9 / 4) ^ 2),
+    Inorm_shiftc = I_shiftc / sqrt(1 ^ 2 + 1 ^ 2 + 1 ^ 2),
+    Knorm_age_decay = K_age_decay / sqrt(1 + (1 / 4) ^ 2 + (5 / 2) ^ 2),
+    Snorm_age_decay = S_age_decay / sqrt((3 / 2) ^ 2 + (3 / 4) ^ 2 + (9 / 4) ^ 2),
+    Inorm_age_decay = I_age_decay / sqrt(1 ^ 2 + 1 ^ 2 + 1 ^ 2),
+    Knorm_age_decay_shiftc = K_age_decay_shiftc / sqrt(1 + (1 / 4) ^ 2 + (5 / 2) ^ 2),
+    Snorm_age_decay_shiftc = S_age_decay_shiftc / sqrt((3 / 2) ^ 2 +  (3 / 4) ^ 2 + (9 / 4) ^ 2),
+    Inorm_age_decay_shiftc = I_age_decay_shiftc / sqrt(1 ^ 2 + 1 ^ 2 + 1 ^ 2)
+  )
+```
+
+# RESULTS
+
+## Data description
+**Table 1**
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere") %>%
+  group_by(Sample, Diagnostic) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
+    # ,T =  paste(signif(mean(AvgThickness), 2), "±", signif(sd(AvgThickness), 2)),
+    # AT =  paste(signif(mean(TotalArea), 2), "±", signif(sd(TotalArea), 2)),
+    # AE =  paste(signif(mean(ExposedArea), 2), "±", signif(sd(ExposedArea), 2)),
+    # K =  paste(signif(mean(K), 2), "±", signif(sd(K), 2)),
+    # S =  paste(signif(mean(S), 2), "±", signif(sd(S), 2)),
+    # I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
+  ) %>%
+  kable(digits = 2) %>%
+  kable_styling()
+
+filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere") %>%
+  group_by(Diagnostic) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
+  ) %>%
+  kable(digits = 2) %>%
+  kable_styling()
+```
+
+## Correlation between K, S, and I with Age for the Healthy Control group
+
+### K 
+
+```{r}
+figS6a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age , y = K)) +
+  geom_point(aes(color = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  # stat_cor() +
+  theme_pubr() +
+  guides(alpha = "none")+ 
+  labs(x = "Age [years]") +
+  scale_x_continuous(limits = c(0,100))
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$K, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+### S
+
+```{r}
+figS6b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = S)) +
+  geom_point(aes(color = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  # stat_cor() +
+  theme_pubr() +
+  guides(alpha = "none", color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(legend.position= "none") +
+  scale_x_continuous(limits = c(0,100))
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$S, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+### I
+
+```{r}
+figS6c <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = I)) +
+  geom_point(aes(color = Sample, alpha = 0.4)) + 
+  geom_smooth(color = "black", method = "lm") +
+  # stat_cor() +
+  theme_pubr() +
+  guides(alpha = "none", color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]") +
+  theme(legend.position= "none") +
+  scale_x_continuous(limits = c(0,100))
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$I, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+
+```
+
+```{r}
+
+figS6 <- ggarrange(figS6a, ggarrange(figS6b, figS6c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+ggsave("figS6.pdf", plot = figS6, width = 18, height = 22, units = "cm", device = "pdf")
+
+```
+
+**FIGURE 1**
+```{r figure1, fig.cap="\\label{fig:figure1}Through age, every Healthy Control subject for the independent morphological component, K, S, and I. For HCPr900 and AHEAD, ages are determined by an interval of years, thereby considering the mean age. The solid line represents a linear regression with a 95% confidence interval.", fig.height=8.66, fig.width=7.1}
+
+figS6
+```
+
+## Slope
+
+```{r}
+summary(lm(
+  1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+  data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere",
+       Diagnostic == "CTL"),
+  na.action = na.omit
+))
+
+summary(lm(
+  1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+  data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere", Age > 18 & Age < 40,
+       Diagnostic == "CTL"),
+  na.action = na.omit
+))
+
+## Displays confidence interval
+# tidy(lm(
+#   1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+#   data = dados_hemi_v1,
+#   na.action = na.omit
+# ), conf.int = TRUE)
+
+paste(
+  "Student's t test comapring slope with theoretical value 1.25. t = ",
+  signif(abs(coef(summary(
+    lm(
+      1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+      data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere",
+       Diagnostic == "CTL"),
+      na.action = na.omit
+    )
+  ))[2, 1] - 1.25) / coef(summary(
+    lm(
+      1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+      data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere",
+       Diagnostic == "CTL"),
+      na.action = na.omit
+    )
+  ))[2, 2], 3) 
+)
+paste(
+  "Student's t test comapring slope with theoretical value 1.25. p value = ",
+  signif(test_coef(
+    lm(
+      1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+      data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere",
+       Diagnostic == "CTL"),
+      na.action = na.omit
+    ),
+    2,
+    1.25
+  ),3)
+)
+```
+
+### Correlation 
+
+```{r}
+lm_Age <-
+  filter(
+    dados_datasetscomp,
+    Sample != "Mota&Houzel2015",
+    ROI == "hemisphere",
+    Diagnostic == "CTL",
+    Age_interval != "[0,5)",
+    Age_interval != "[5,10)",
+    Age_interval != "[10,15)"
+  ) %>%
+  group_by(Age_interval10) %>%
+  do(fit_Age = tidy(
+    lm(
+      1 / 2 * log10(AvgThickness) +  log10(TotalArea) ~  log10(ExposedArea),
+      data = .,
+      na.action = na.omit
+    ),
+    conf.int = TRUE
+  )) %>%
+  unnest(cols = c(fit_Age))
+
+lm_Age <- lm_Age %>% mutate(Age_interval10 = as.double((str_sub(Age_interval10,2,3))))
+
+cor.test(filter(lm_Age, term == "log10(ExposedArea)")$estimate, filter(lm_Age, term == "log10(ExposedArea)")$Age_interval10)
+
+```
+
+## Uncertainties estimation for baseline
+
+**Part of Table 2 - Natural fluctuation and Type B errors**
+
+### GM volume \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(GMvolume ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### AvgThickness \~ Age
+
+Correlation:
+
+```{r}
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$AvgThickness, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+Effect size of correlation: 
+
+```{r}
+res(
+  cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$AvgThickness,filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)$estimate,
+  var.r = NULL,(cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$AvgThickness,filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)$parameter + 2)/2,
+  level = 95,
+  dig = 2,
+  verbose = TRUE
+)
+```
+
+R squared (correlation):
+
+```{r}
+glance(lm(AvgThickness ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))$r.squared
+```
+
+Linear Model - statement the harmonization is possible trhough a linear model:
+
+```{r}
+summary(lm(AvgThickness ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))
+```
+
+Model:
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(AvgThickness ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### TotalArea \~ Age
+
+Correlation:
+
+```{r}
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$TotalArea, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+Effect size of correlation: 
+
+```{r}
+res(
+  cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$TotalArea,filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)$estimate,
+  var.r = NULL,(cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$TotalArea,filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)$parameter + 2)/2,
+  level = 95,
+  dig = 2,
+  verbose = TRUE
+)
+```
+
+R squared (correlation):
+
+```{r}
+glance(lm(TotalArea ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))$r.squared
+```
+
+Linear Model - statement the harmonization is possible trhough a linear model:
+
+```{r}
+summary(lm(TotalArea ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))
+```
+
+Model:
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(TotalArea ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### ExposedArea \~ Age
+
+Correlation:
+
+```{r}
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$ExposedArea, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+Effect size of correlation: 
+
+```{r}
+res(
+  cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$ExposedArea,filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)$estimate,
+  var.r = NULL,(cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$ExposedArea,filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)$parameter + 2)/2,
+  level = 95,
+  dig = 2,
+  verbose = TRUE
+)
+```
+
+R squared (correlation):
+
+```{r}
+glance(lm(ExposedArea ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))$r.squared
+```
+
+Linear Model - statement the harmonization is possible trhough a linear model:
+
+```{r}
+summary(lm(ExposedArea ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))
+```
+
+Model:
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(ExposedArea ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### GI \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(localGI ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### K \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(K ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### S \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(S ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### I \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(I ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+```
+
+Model summary and R squared:
+```{r}
+summary(m.1)
+r.squaredGLMM(m.1)
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+## Multisite harmonization
+
+```{r echo=FALSE}
+
+T_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = AvgThickness, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  labs(y = "T") +
+  scale_x_continuous(limits = c(0,100))
+
+T_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = AvgThickness_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  labs(y = "T (after harmonization)") +
+  scale_x_continuous(limits = c(0,100))
+
+
+AT_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = TotalArea, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  labs(y = "AT") +
+  scale_x_continuous(limits = c(0,100)) +
+  scale_y_continuous(breaks = c(70000, 90000, 110000, 130000, 150000))
+
+AT_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = TotalArea_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  labs(y = "AT (after harmonization)") +
+  scale_x_continuous(limits = c(0,100)) +
+  scale_y_continuous(breaks = c(70000, 90000, 110000, 130000, 150000))
+
+AE_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = ExposedArea, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  labs(y = "AE") +
+  scale_x_continuous(limits = c(0,100)) +
+  scale_y_continuous(breaks = c(30000, 35000, 40000, 45000, 50000))
+
+AE_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = ExposedArea_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  labs(y = "AE (after harmonization)") +
+  scale_x_continuous(limits = c(0,100)) +
+  scale_y_continuous(breaks = c(30000, 35000, 40000, 45000, 50000))
+
+harmonization <- ggarrange(T_a, AT_a, AE_a, T_b, AT_b, AE_b, labels = c("A","B", "C", "D", "E", "F"), nrow = 2, ncol = 3, font.label = list(size = 11), common.legend = TRUE, legend = "top", align = "hv")
+
+harmonization
+
+ggsave("harmonization.pdf", plot = harmonization, width = 18, height = 22, units = "cm", device = "pdf")
+ggsave("harmonization.png", plot = harmonization, width = 18, height = 22, units = "cm", device = "png")
+
+ggsave("T_a.pdf", plot = T_a, width = 18, height = 22, units = "cm", device = "pdf")
+ggsave("T_b.pdf", plot = T_b, width = 18, height = 22, units = "cm", device = "pdf")
+
+ggsave("AT_a.pdf", plot = AT_a, width = 18, height = 22, units = "cm", device = "pdf")
+ggsave("AT_b.pdf", plot = AT_b, width = 18, height = 22, units = "cm", device = "pdf")
+
+ggsave("AE_a.pdf", plot = AE_a, width = 18, height = 22, units = "cm", device = "pdf")
+ggsave("AE_b.pdf", plot = AE_b, width = 18, height = 22, units = "cm", device = "pdf")
+```
+
+```{r echo=FALSE}
+
+K_lifespan_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") + geom_smooth(aes(color = Sample), method = "lm") +
+    theme_pubr() + 
+    guides(alpha = "none") +
+  scale_x_continuous(limits = c(0,100))
+
+K_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "K (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+K_lifespan <- ggarrange(K_lifespan_a, K_lifespan_b,labels = c("A","B"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top", align  = "hv")
+
+K_lifespan
+
+ggsave("K_lifespan.pdf", plot = K_lifespan, width = 18, height = 22, units = "cm", device = "pdf")
+```
+
+```{r}
+S_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "S (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+I_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I_shiftc, alpha = 0.4))+
+    geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
+    geom_smooth(method = "lm", color = "black") +
+    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    guides(alpha = "none") + 
+  theme_pubr() +
+  labs(y = "I (harmonized)") +
+  scale_x_continuous(limits = c(0,100))
+
+lifespan_shift <- ggarrange(K_lifespan_b, S_lifespan_b, I_lifespan_b,labels = c("A","B", "C"), nrow = 3, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "right", vjust = 1.2, align = "hv")
+
+ggsave("lifespan_shift.pdf", plot = lifespan_shift, width = 18, height = 16, units = "cm", device = "pdf")
+ggsave("lifespan_shift.png", plot = lifespan_shift, width = 18, height = 16, units = "cm", device = "png")
+
+lifespan_shift
+```
+
+
+**FIGURE 2**
+```{r figure2, fig.cap="\\label{fig:figure2}K through age for Healthy Controls (A) raw data, (B) after harmonizing (removing the estimated residual from the Linear Mixed Model) from T, AT, and AE resulting in the harmonized values of K.", fig.height=8.66, fig.width=7.1}
+K_lifespan
+```
+
+## Baseline and rate estimates and Diagnostic discrimination based on changing rates
+
+```{r}
+# dados_datasetscomp$Diagnostic <- as.factor(dados_datasetscomp$Diagnostic)
+# dados_datasetscomp$Diagnostic <- relevel(dados_datasetscomp$Diagnostic, ref = "CTL")
+```
+
+
+### Slope
+
+```{r}
+summary(lm(
+  1 / 2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc),
+  data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere",
+       Diagnostic == "CTL"),
+  na.action = na.omit
+))
+
+## Displays confidence interval
+# tidy(lm(
+#   1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+#   data = dados_hemi_v1,
+#   na.action = na.omit
+# ), conf.int = TRUE)
+
+
+```
+
+```{r}
+lm_Age <-
+  filter(
+    dados_datasetscomp,
+    Sample != "Mota&Houzel2015",
+    ROI == "hemisphere",
+    Diagnostic == "CTL",
+    Age_interval != "[0,5)",
+    Age_interval != "[5,10)",
+    Age_interval != "[10,15)"
+  ) %>%
+  group_by(Age_interval10) %>%
+  do(fit_Age = tidy(
+    lm(
+      1 / 2 * log10(AvgThickness_shiftc) +  log10(TotalArea_shiftc) ~  log10(ExposedArea_shiftc),
+      data = .,
+      na.action = na.omit
+    ),
+    conf.int = TRUE
+  )) %>%
+  unnest(cols = c(fit_Age))
+
+lm_Age %>%
+  kable(digits = 2) %>%
+  kable_styling()
+
+lm_Age <- lm_Age %>% mutate(Age_interval10 = as.double((str_sub(Age_interval10,2,3))))
+
+cor.test(filter(lm_Age, term == "log10(ExposedArea_shiftc)")$estimate, filter(lm_Age, term == "log10(ExposedArea_shiftc)")$Age_interval10)
+
+```
+
+```{r cache=TRUE}
+amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval10) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Age_interval10) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
+
+fig_slope_ageinterval <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval10)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() +
+  geom_line(group = 1) + 
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    ) + labs(y ="Slope (after harmonization)", x = "Age interval") +  geom_text(aes(label = N), nudge_y = 0.2)
+
+ggsave("fig_slope_ageinterval.pdf", plot = fig_slope_ageinterval, width = 18, height = 14, units = "cm", device = "pdf")
+```
+
+**FIGURE 3**
+```{r figure3, fig.cap="\\label{fig:figure3}Slope alpha derived from the Cortical Folding model from Mota & Houzel through age for Healthy Controls. Data points from (0, 5] and [95, 100] years old were omitted due to the reduced data. The numbers on top of each point indicates the number of subjects at each interval. Mean value for all ages were 1.38+-0.012 and correlation of alpha and Age is Pearson's r~=~-0.69, p~=~0.0031 from [15,20) years old.", fig.height=5.5, fig.width=7.1}
+
+fig_slope_ageinterval
+```
+
+```{r}
+summary(lm(
+  1 / 2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc),
+  data = filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere",
+       Diagnostic == "AD"),
+  na.action = na.omit
+))
+
+## Displays confidence interval
+# tidy(lm(
+#   1 / 2 * log10(AvgThickness) + log10(TotalArea) ~ log10(ExposedArea),
+#   data = dados_hemi_v1,
+#   na.action = na.omit
+# ), conf.int = TRUE)
+
+
+```
+
+```{r cache=TRUE}
+amostra_Coef <- filter(dados_datasetscomp, ROI == "hemisphere", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Diagnostic, Age_interval10) %>%
+    do(fit_amostra = tidy(lm(1/2 * log10(AvgThickness_shiftc) + log10(TotalArea_shiftc) ~ log10(ExposedArea_shiftc), data = ., na.action = na.omit), conf.int = TRUE, conf.level = 0.95)) %>% 
+    unnest(fit_amostra)
+
+amostras_Coef_age <- filter(dados_datasetscomp, ROI == "hemisphere", Age_interval != "[0,5)", Age_interval != "[95,100]") %>%
+    group_by(Diagnostic, Age_interval10) %>%
+    summarise(
+        N = n_distinct(SUBJ),
+        min_age = min(Age),
+        max_age = max(Age))
+
+amostra_Coef <- full_join(amostra_Coef, amostras_Coef_age) %>% filter(term == "log10(ExposedArea_shiftc)")
+
+fig_slope_ageinterval_AD <- ggplot(amostra_Coef, aes(y = estimate, x = Age_interval10, color = Diagnostic)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+    geom_point() +
+  geom_line(aes(group=Diagnostic)) + 
+  geom_hline(yintercept = 1.25, linetype = "dashed") +
+    theme_pubr() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)
+    ) + labs(y ="Slope (after harmonization)", x = "Age interval") +  geom_text(aes(label = N), nudge_y = 0.2) +
+  scale_fill_manual(values=cbbPalette2) +
+  scale_colour_manual(values=cbbPalette2)
+
+fig_slope_ageinterval_AD
+
+ggsave("fig_slope_ageinterval_AD.pdf", plot = fig_slope_ageinterval_AD, width = 18, height = 14, units = "cm", device = "pdf")
+```
+
+### GM volume \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(GMvolume_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+pairs <- pairs(m.lstk) 
+
+mean <- as_tibble(mean)
+m.lstk <- as_tibble(m.lstk)
+
+
+lst <- m.lstk %>%
+  mutate(TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableGM <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "GM_shiftc")
+ 
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+
+pairs %>%
+  kable() %>%
+  kable_styling()
+
+ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'GM/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+e <- effect("Age:Diagnostic", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "K", shape = "Diagnostic") + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### AvgThickness \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(AvgThickness_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+
+mean <- as_tibble(mean)
+m.lstk <- as_tibble(m.lstk)
+
+lst <- m.lstk %>%
+  mutate(TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableT <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "T_shiftc")
+ 
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### TotalArea \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(TotalArea_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+sigma.hat(m.1)
+r.squaredGLMM(m.1)
+
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+
+mean <- as_tibble(mean)
+m.lstk <- as_tibble(m.lstk)
+
+ lst <- m.lstk %>%
+   mutate(
+     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableAT <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "AT_shiftc")
+ 
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### ExposedArea \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(ExposedArea_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+
+mean <- as_tibble(mean)
+m.lstk <- as_tibble(m.lstk)
+
+ lst <- m.lstk %>% mutate(
+     TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableAE <- full_join(mean, lst, by = c("Diagnostic")) %>% mutate(percent = Age.trend*100/abs(lsmean), Variable = "AE_shiftc")
+
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### GI \~ Age
+
+```{r cache=TRUE}
+m.1 <- lme4::lmer(localGI_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+
+mean <- as_tibble(mean)
+m.lstk <- as_tibble(m.lstk)
+
+lst <- m.lstk %>%
+  mutate(
+    TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableGI <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "localGI_shiftc")
+
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### K \~ Age
+
+```{r}
+m.1 <- lme4::lmer(K_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Mean values:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+pairs_means <- pairs(mean) 
+mean <- as_tibble(mean)
+
+pairs_means %>%
+  kable() %>%
+  kable_styling()
+
+paste("Difference in pct ", as_tibble(pairs_means)[2]*100/mean$lsmean[1])
+
+```
+
+Trends:
+```{r}
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+pairs_trends <- pairs(m.lstk) 
+m.lstk <- as_tibble(m.lstk)
+
+pairs_trends %>%
+  kable() %>%
+  kable_styling()
+
+lst <- m.lstk %>%
+  mutate(
+    TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableK <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "K_shiftc")
+```
+
+Figures:
+```{r cache=TRUE}
+
+fig_TX_K_age_c <- ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'K/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+e <- effect("Age:Diagnostic", m.1)
+e <- as.data.frame(e)
+
+fig_K_age_c <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "K", shape = "Diagnostic") + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### S \~ Age
+
+```{r}
+m.1 <- lme4::lmer(S_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Mean values:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+pairs_means <- pairs(mean) 
+mean <- as_tibble(mean)
+
+pairs_means %>%
+  kable() %>%
+  kable_styling()
+
+paste("Difference in pct ", as_tibble(pairs_means)[2]*100/mean$lsmean[1])
+
+```
+
+Trends:
+```{r}
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+pairs_trends <- pairs(m.lstk) 
+m.lstk <- as_tibble(m.lstk)
+
+pairs_trends %>%
+  kable() %>%
+  kable_styling()
+
+lst <- m.lstk %>% mutate(
+    TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableS <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "S_shiftc")
+```
+
+Figures:
+
+```{r cache=TRUE}
+fig_TX_S_age_c <- ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'S/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+e <- effect("Age:Diagnostic", m.1)
+e <- as.data.frame(e)
+
+fig_S_age_c <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "S", shape = "Diagnostic") + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10), legend.position = "none")
+
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### I \~ Age
+
+```{r}
+m.1 <- lme4::lmer(I_shiftc ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
+
+summary(m.1)
+
+coefs <- data.frame(coef(summary(m.1)))
+coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+```
+
+Mean value:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+as_tibble(mean)[1,2]
+```
+
+Mean values:
+```{r}
+mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
+pairs_means <- pairs(mean) 
+mean <- as_tibble(mean)
+
+pairs_means %>%
+  kable() %>%
+  kable_styling()
+
+paste("Difference in pct ", as_tibble(pairs_means)[2]*100/mean$lsmean[1])
+
+```
+
+Trends:
+```{r}
+m.lstk <- lstrends(m.1, ~ Diagnostic, var="Age")
+pairs_trends <- pairs(m.lstk) 
+m.lstk <- as_tibble(m.lstk)
+
+pairs_trends %>%
+  kable() %>%
+  kable_styling()
+
+lst <- m.lstk %>% mutate(
+    TX = paste(signif(Age.trend, 2), "±", signif(SE, 2)))
+
+tableI <- full_join(mean, lst, by = c("Diagnostic")) %>%
+  mutate(percent = Age.trend*100/abs(lsmean), Variable = "I_shiftc")
+
+```
+
+Figures:
+
+```{r cache=TRUE}
+fig_TX_I_age_c <- ggplot(data = as_tibble(pairs), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.3, nudge_y = 0.0003) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'I/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10), text = element_text(size = 10))
+
+e <- effect("Age:Diagnostic", m.1)
+e <- as.data.frame(e)
+
+fig_I_age_c <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "I", shape = "Diagnostic") + 
+  theme(axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    text = element_text(size = 10), legend.position = "none")
+
+```
+
+Natural fluctuation error:
+```{r}
+signif(sigma.hat(m.1)$sigma$data,2)
+```
+
+Type B error:
+```{r}
+signif(sigma.hat(m.1)$sigma$Sample,2)
+```
+
+### rates
+
+```{r echo=FALSE}
+tableT <- tableT %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableAT <- tableAT %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableAE <- tableAE %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableGM <- tableGM %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableK <- tableK %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableS <- tableS %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableI <- tableI %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+tableGI <- tableGI %>% dplyr::select(c(Diagnostic, percent, Variable, Age.trend, SE.y))
+
+rate <- full_join(tableT, tableAT) %>%
+  full_join(tableAE) %>%
+  full_join(tableK) %>%
+  full_join(tableS) %>%
+  full_join(tableI) %>%
+  full_join(tableGI) %>%
+  full_join(tableGM) %>%
+mutate(TX = paste(signif(Age.trend, 2), "±", signif(SE.y, 2), "(",signif(percent, 2), ")")) %>%
+  dplyr::select(c(Variable, Diagnostic, TX)) %>%
+  pivot_wider(names_from = Diagnostic, values_from = TX)
+
+write.csv(rate, "rate.csv")
+```
+
+**TABLE 3**
+
+```{r}
+rate %>%
+  kable(digits = 2) %>%
+  kable_styling()
+```
+
+## Correlation between K, S, and I with Age for the Healthy Control group
+
+### K 
+
+```{r}
+figS6a_alt <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age , y = K_shiftc)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  # stat_cor() +
+  theme_pubr() +
+  guides(alpha = "none")+ 
+  labs(x = "Age [years]", y ="K (after harmonization)") +
+  scale_x_continuous(limits = c(0,100))
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$K_shiftc, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+### S
+
+```{r}
+figS6b_alt <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = S_shiftc)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) +
+  geom_smooth(color = "black", method = "lm") +
+  # stat_cor() +
+  theme_pubr() +
+  guides(alpha = "none", color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]", y ="S (after harmonization)") +
+  theme(legend.position= "none") +
+  scale_x_continuous(limits = c(0,100))
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$S_shiftc, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+```
+
+### I
+
+```{r}
+figS6c_alt <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"),
+       aes(x = Age, y = I_shiftc)) +
+  geom_point(aes(color = Sample, fill = Sample, alpha = 0.4)) + 
+  geom_smooth(color = "black", method = "lm") +
+  # stat_cor() +
+  theme_pubr() +
+  guides(alpha = "none", color = FALSE,fill = FALSE)+ 
+  labs(x = "Age [years]", y ="I (after harmonization)") +
+  theme(legend.position= "none") +
+  scale_x_continuous(limits = c(0,100))
+
+cor.test(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$I_shiftc, filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")$Age)
+
+```
+
+```{r}
+
+figS6_alt <- ggarrange(figS6a_alt, ggarrange(figS6b_alt, figS6c_alt,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+ggsave("figS6_alt.pdf", plot = figS6_alt, width = 18, height = 22, units = "cm", device = "pdf")
+
+```
+
+**FIGURE 1_alternativa**
+```{r figure1alt, fig.cap="\\label{fig:figure1}", fig.height=8.66, fig.width=7.1}
+
+figS6_alt
+```
+
+### Figures
+
+```{r}
+fig_age_c <- ggarrange(fig_K_age_c, ggarrange(fig_S_age_c, fig_I_age_c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+ggsave("fig_age_c.pdf", plot = fig_age_c, width = 18, height = 18, units = "cm", device = "pdf")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# fig_TX_age_c <- ggarrange(fig_TX_K_age_c, ggarrange(fig_TX_S_age_c, fig_TX_I_age_c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
+
+# ggsave("fig_TX_age_c.pdf", plot = fig_TX_age_c, width = 18, height = 18, units = "cm", device = "pdf")
+
+```
+
+**FIGURE4**
+
+```{r figure4, fig.cap="\\label{fig:figure4}Fitted values extracted from the linear regression model after data harmonization. Bars represent the 95 confidence interval. Complete summary of linear models in Supplementary Material. (A) Concerning K, Alzheimer's Disease (AD) has a shallow slope, meaning small changes with Age. Compared to healthy controls, AD values of K are almost constant and similar to older subjects (AD slope p-value<0.0001 and CTL slope p-value<0.0001; pairwise comparison estimate -0.000903, p<0.0001). (B) For S, the AD and CTL patterns have similar intercepts, but statistically different slopes (AD slope p-value=0.004 and CTL slope p-value<0.0001; pairwise comparison estimate 0.0013, p=0.004). (C) For I, that reflects brain volume, CTL has a decreasing volume with aging, while AD has a smaller slope (AD slope p-value<0.0001 and CTL slope p-value<0.0001; pairwise comparison estimate -0.00168, p<0.0001).", fig.height=5.5, fig.width=7.1}
+fig_age_c
+```
+
+## Lobes
+
+```{r}
+dados_datasetscomp_lobes <- filter(dados_datasetscomp, ROI != "hemisphere", Diagnostic == "CTL" | Diagnostic == "AD", Sample != "IDOR-CCD-Control")
+dados_datasetscomp_lobes$Diagnostic <- factor(dados_datasetscomp_lobes$Diagnostic, levels = c("CTL", "MCI","AD"))
+dados_datasetscomp_lobes$Sample <- as.factor(dados_datasetscomp_lobes$Sample)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere") %>%
+  group_by(Sample, Diagnostic) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
+    # ,T =  paste(signif(mean(AvgThickness), 2), "±", signif(sd(AvgThickness), 2)),
+    # AT =  paste(signif(mean(TotalArea), 2), "±", signif(sd(TotalArea), 2)),
+    # AE =  paste(signif(mean(ExposedArea), 2), "±", signif(sd(ExposedArea), 2)),
+    # K =  paste(signif(mean(K), 2), "±", signif(sd(K), 2)),
+    # S =  paste(signif(mean(S), 2), "±", signif(sd(S), 2)),
+    # I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
+  ) %>%
+  kable(digits = 2) %>%
+  kable_styling()
+
+filter(dados_datasetscomp,
+       Sample != "Mota&Houzel2015",
+       ROI == "hemisphere") %>%
+  group_by(Diagnostic) %>%
+  summarise(
+    N = n_distinct(SUBJ),
+    age = paste(signif(mean(Age), 2), "±", signif(sd(Age), 2)),
+    age_range = paste(signif(min(Age), 2), "; ", signif(max(Age), 2))
+  ) %>%
+  kable(digits = 2) %>%
+  kable_styling()
+```
+
+### K \~ Age
+```{r echo=FALSE}
+m.1 <- lme4::lmer(K_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = dados_datasetscomp_lobes)
+
+summary(m.1)
+
+m.lstk <- lstrends(m.1, ~ Diagnostic*ROI, var="Age")
+pairs <- pairs(m.lstk) 
+
+pairs <- as_tibble(pairs) %>%
+  mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
+  mutate(Diagnostic.1 = str_split(Contrast.1, pattern = " ", simplify = TRUE)[,1], ROI.1 = str_split(Contrast.1, pattern = " ", simplify = TRUE)[,2], Diagnostic.2 = str_split(Contrast.2, pattern = " ", simplify = TRUE)[,1], ROI.2 = str_split(Contrast.2, pattern = " ", simplify = TRUE)[,2]) %>%
+  mutate(contrast = str_c(Diagnostic.1, Diagnostic.2 ,sep = "-"), contrast_ROI = str_c(ROI.1, ROI.2 ,sep = "-")) %>%
+  filter(ROI.1 == ROI.2)
+
+ggplot(data = filter(pairs, ROI.1 == ROI.2), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.4, nudge_y = 0.0003) +
+  facet_wrap(ROI.1 ~.) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'K/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9))
+
+e <- effect("Age:Diagnostic:ROI", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "K", shape = "Diagnostic") + facet_wrap(. ~ ROI)
+
+```
+
+Trends:
+```{r}
+pairs %>%
+  kable() %>%
+  kable_styling()
+```
+
+### S \~ Age
+
+```{r echo=FALSE}
+m.1 <- lme4::lmer(S_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = dados_datasetscomp_lobes)
+
+summary(m.1)
+
+m.lstk <- lstrends(m.1, ~ Diagnostic*ROI, var="Age")
+pairs <- pairs(m.lstk) 
+
+pairs <- as_tibble(pairs) %>%
+  mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
+  mutate(Diagnostic.1 = str_split(Contrast.1, pattern = " ", simplify = TRUE)[,1], ROI.1 = str_split(Contrast.1, pattern = " ", simplify = TRUE)[,2], Diagnostic.2 = str_split(Contrast.2, pattern = " ", simplify = TRUE)[,1], ROI.2 = str_split(Contrast.2, pattern = " ", simplify = TRUE)[,2]) %>%
+  mutate(contrast = str_c(Diagnostic.1, Diagnostic.2 ,sep = "-"), contrast_ROI = str_c(ROI.1, ROI.2 ,sep = "-")) %>%
+  filter(ROI.1 == ROI.2)
+
+ggplot(data = filter(pairs, ROI.1 == ROI.2), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.4, nudge_y = 0.0003) +
+  facet_wrap(ROI.1 ~.) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'S/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9))
+
+e <- effect("Age:Diagnostic:ROI", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "S", shape = "Diagnostic") + facet_wrap(. ~ ROI)
+
+```
+
+Trends:
+```{r}
+pairs %>%
+  kable() %>%
+  kable_styling()
+```
+
+### I \~ Age
+
+```{r echo=FALSE}
+m.1 <- lme4::lmer(I_shiftc ~ Age * Diagnostic * ROI + (1|Sample:Diagnostic:ROI), data = dados_datasetscomp_lobes)
+
+summary(m.1)
+
+m.lstk <- lstrends(m.1, ~ Diagnostic*ROI, var="Age")
+pairs <- pairs(m.lstk) 
+
+pairs <- as_tibble(pairs) %>%
+  mutate(Contrast.1 = str_split(contrast, pattern = " - ", simplify = TRUE)[,1], Contrast.2 = str_split(contrast, pattern = " - ", simplify = TRUE)[,2]) %>%
+  mutate(Diagnostic.1 = str_split(Contrast.1, pattern = " ", simplify = TRUE)[,1], ROI.1 = str_split(Contrast.1, pattern = " ", simplify = TRUE)[,2], Diagnostic.2 = str_split(Contrast.2, pattern = " ", simplify = TRUE)[,1], ROI.2 = str_split(Contrast.2, pattern = " ", simplify = TRUE)[,2]) %>%
+  mutate(contrast = str_c(Diagnostic.1, Diagnostic.2 ,sep = "-"), contrast_ROI = str_c(ROI.1, ROI.2 ,sep = "-")) %>%
+  filter(ROI.1 == ROI.2)
+
+ggplot(data = filter(pairs, ROI.1 == ROI.2), aes(
+    x = contrast,
+    y = estimate,
+    ymin = estimate - SE,
+    ymax = estimate + SE)) +
+    geom_hline(yintercept = 0,
+               linetype = "11",
+               colour = "grey60") +
+    geom_pointrange( position = position_dodge(width = 0.2)) +
+   geom_text(aes(label = str_c("p adj ", signif(p.value, digits = 2))), nudge_x = 0.4, nudge_y = 0.0003) +
+  facet_wrap(ROI.1 ~.) +
+    coord_flip() + 
+    labs(y =  expression('Differences in slopes ('*Delta*'I/'*Delta*'Age)'), x = "Contrast") +
+  theme_pubr() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) 
+
+e <- effect("Age:Diagnostic:ROI", m.1)
+e <- as.data.frame(e)
+
+ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "I", shape = "Diagnostic") + facet_wrap(. ~ ROI)
+
+```
+
+Trends:
+```{r}
+pairs %>%
+  kable() %>%
+  kable_styling()
+```
+
