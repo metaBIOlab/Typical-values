@@ -63,6 +63,12 @@ filter(dados, ROI == "hemisphere") %>%
     I =  paste(signif(mean(I), 2), "±", signif(sd(I), 2))
 ) %>% kable(digits = 2) %>% kable_styling()
 
+filter(dados, ROI == "hemisphere") %>%
+  group_by(Gender) %>%
+  summarise(
+    N = n_distinct(SUBJ)
+) %>% kable(digits = 2) %>% kable_styling()
+
 subj_1 <- unique(filter(dados, Session == 1)$SUBJ)
 subj_2 <- unique(filter(dados, Session == 2)$SUBJ)
 subj_3 <- unique(filter(dados, Session == 3)$SUBJ)

@@ -760,7 +760,7 @@ R squared (correlation):
 glance(lm(ExposedArea ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))$r.squared
 ```
 
-Linear Model - statement the harmonization is possible trhough a linear model:
+Linear Model - statement the harmonization is possible through a linear model:
 
 ```{r}
 summary(lm(ExposedArea ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))
@@ -1480,10 +1480,10 @@ fig_TX_K_age_c <- ggplot(data = as_tibble(pairs), aes(
   theme(axis.title = element_text(size = 11),
     axis.text = element_text(size = 10), text = element_text(size = 10))
 
-e <- effect("Age:Diagnostic", m.1)
+e <- effect("Age:Diagnostic", m.1, xlevels=list(Age=seq(56, 92, 4)))
 e <- as.data.frame(e)
 
-fig_K_age_c <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "K", shape = "Diagnostic") + 
+fig_K_age_c <- ggplot(e, aes(x = Age, y = fit, ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "K", shape = "Diagnostic") + 
   theme(axis.title = element_text(size = 11),
     axis.text = element_text(size = 10), text = element_text(size = 10))
 
@@ -1567,7 +1567,7 @@ fig_TX_S_age_c <- ggplot(data = as_tibble(pairs), aes(
   theme(axis.title = element_text(size = 11),
     axis.text = element_text(size = 10), text = element_text(size = 10))
 
-e <- effect("Age:Diagnostic", m.1)
+e <- effect("Age:Diagnostic", m.1, xlevels=list(Age=seq(56, 92, 4)))
 e <- as.data.frame(e)
 
 fig_S_age_c <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "S", shape = "Diagnostic") + 
@@ -1656,7 +1656,7 @@ fig_TX_I_age_c <- ggplot(data = as_tibble(pairs), aes(
   theme(axis.title = element_text(size = 11),
     axis.text = element_text(size = 10), text = element_text(size = 10))
 
-e <- effect("Age:Diagnostic", m.1)
+e <- effect("Age:Diagnostic", m.1, xlevels=list(Age=seq(56, 92, 4)))
 e <- as.data.frame(e)
 
 fig_I_age_c <- ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "I", shape = "Diagnostic") + 
@@ -1870,7 +1870,7 @@ ggplot(data = filter(pairs, ROI.1 == ROI.2), aes(
   theme_pubr() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9))
 
-e <- effect("Age:Diagnostic:ROI", m.1)
+e <- effect("Age:Diagnostic:ROI", m.1, xlevels=list(Age=seq(56, 92, 4)))
 e <- as.data.frame(e)
 
 ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "K", shape = "Diagnostic") + facet_wrap(. ~ ROI)
@@ -1916,7 +1916,7 @@ ggplot(data = filter(pairs, ROI.1 == ROI.2), aes(
   theme_pubr() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9))
 
-e <- effect("Age:Diagnostic:ROI", m.1)
+e <- effect("Age:Diagnostic:ROI", m.1, xlevels=list(Age=seq(56, 92, 4)))
 e <- as.data.frame(e)
 
 ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "S", shape = "Diagnostic") + facet_wrap(. ~ ROI)
@@ -1962,7 +1962,7 @@ ggplot(data = filter(pairs, ROI.1 == ROI.2), aes(
   theme_pubr() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size=9)) 
 
-e <- effect("Age:Diagnostic:ROI", m.1)
+e <- effect("Age:Diagnostic:ROI", m.1, xlevels=list(Age=seq(56, 92, 4)))
 e <- as.data.frame(e)
 
 ggplot(e, aes(x = Age, y = fit,ymin=lower, ymax=upper, shape = Diagnostic)) + geom_pointrange() + geom_line() + theme_pubr() + labs(x = "Age [years]", y = "I", shape = "Diagnostic") + facet_wrap(. ~ ROI)
