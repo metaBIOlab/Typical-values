@@ -225,6 +225,8 @@ dados_datasetscomp <- full_join(dados_datasetscomp, Age.trend) %>%
 m.1 <-
   lme4::lmer(AvgThickness ~ Age * ROI + (1|Sample:ROI), data = dados_datasetscomp_rate)
 
+equatiomatic::extract_eq(m.1, wrap=TRUE)
+
 re <- as_tibble(ranef(m.1)) %>%
   filter(grpvar == "Sample:ROI") %>%
   mutate(
@@ -258,6 +260,8 @@ dados_datasetscomp <- full_join(dados_datasetscomp, Age.trend) %>%
 ```{r}
 m.1 <-
   lme4::lmer(TotalArea_corrected ~ Age * ROI + (1 | Sample:ROI), data = dados_datasetscomp_rate)
+
+equatiomatic::extract_eq(m.1, wrap=TRUE)
 
 re <- as_tibble(ranef(m.1)) %>%
   filter(grpvar == "Sample:ROI") %>%
@@ -294,6 +298,8 @@ dados_datasetscomp <- full_join(dados_datasetscomp, re) %>%
 m.1 <-
   lme4::lmer(
     ExposedArea_corrected  ~ Age * ROI + (1 | Sample:ROI), data = dados_datasetscomp_rate)
+
+equatiomatic::extract_eq(m.1, wrap=TRUE)
 
 re <- as_tibble(ranef(m.1)) %>%
   filter(grpvar == "Sample:ROI") %>%
@@ -827,6 +833,8 @@ signif(sigma.hat(m.1)$sigma$Sample,2)
 ```{r cache=TRUE}
 m.1 <- lme4::lmer(K ~ Age * Diagnostic +(1|Sample) + (1|Sample:Diagnostic) , data = filter(dados_datasetscomp, ROI == "hemisphere"))
 ```
+
+
 
 Model summary and R squared:
 ```{r}
@@ -1423,6 +1431,10 @@ coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
 ```
 
+```{r}
+equatiomatic::extract_eq(m.1, use_coefs = TRUE, wrap = TRUE)
+```
+
 Mean value:
 ```{r}
 mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
@@ -1511,6 +1523,10 @@ coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
 ```
 
+```{r}
+equatiomatic::extract_eq(m.1, use_coefs = TRUE, wrap = TRUE)
+```
+
 Mean value:
 ```{r}
 mean <- lsmeans(m.1, ~ Diagnostic, var="Age")
@@ -1597,6 +1613,10 @@ summary(m.1)
 coefs <- data.frame(coef(summary(m.1)))
 coefs$p.z <- 2 * (1 - pnorm(abs(coefs$t.value)))
 coefs
+```
+
+```{r}
+equatiomatic::extract_eq(m.1, use_coefs = TRUE, wrap = TRUE)
 ```
 
 Mean value:
