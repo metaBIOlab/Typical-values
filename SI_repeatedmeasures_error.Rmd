@@ -557,7 +557,7 @@ sd_T <- ggplot(SD, aes(x = sd_T)) +
     geom_vline(aes(xintercept = mean(sd_T) - sd(sd_T)), linetype = "dashed") +
   geom_vline(aes(xintercept = mean(sd_T) + sd(sd_T)), linetype = "dashed") +
   guides(alpha = FALSE) +
-  labs(x = "SD - Average Cortical Thickness [mm]") +
+  labs(x = "SD - Cortical Thickness") +
     theme_pubr() + 
     theme(axis.title = element_text(size = 11),
           axis.text = element_text(size = 10), text = element_text(size = 10))

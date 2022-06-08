@@ -933,7 +933,7 @@ T_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL
     geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
     theme_pubr() + 
     guides(alpha = "none") +
-  labs(y = "T (after harmonization)") +
+  labs(y = "T (harmonized)") +
   scale_x_continuous(limits = c(0,100))
 
 
@@ -953,7 +953,7 @@ AT_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CT
   geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
     theme_pubr() + 
     guides(alpha = "none") +
-  labs(y = "AT (after harmonization)") +
+  labs(y = "AT (harmonized)") +
   scale_x_continuous(limits = c(0,100)) +
   scale_y_continuous(breaks = c(70000, 90000, 110000, 130000, 150000))
 
@@ -970,10 +970,10 @@ AE_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CT
 AE_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = ExposedArea_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
     geom_smooth(method = "lm", color = "black") +
-  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
     theme_pubr() + 
     guides(alpha = "none") +
-  labs(y = "AE (after harmonization)") +
+  labs(y = "AE (harmonized)") +
   scale_x_continuous(limits = c(0,100)) +
   scale_y_continuous(breaks = c(30000, 35000, 40000, 45000, 50000))
 
