@@ -983,6 +983,7 @@ harmonization
 
 ggsave("harmonization.pdf", plot = harmonization, width = 18, height = 22, units = "cm", device = "pdf")
 ggsave("harmonization.png", plot = harmonization, width = 18, height = 22, units = "cm", device = "png")
+ggsave("harmonization.jpg", plot = harmonization, width = 18, height = 22, units = "cm", device = "jpg")
 
 ggsave("T_a.pdf", plot = T_a, width = 18, height = 22, units = "cm", device = "pdf")
 ggsave("T_b.pdf", plot = T_b, width = 18, height = 22, units = "cm", device = "pdf")
@@ -1042,6 +1043,7 @@ lifespan_shift <- ggarrange(K_lifespan_b, S_lifespan_b, I_lifespan_b,labels = c(
 
 ggsave("lifespan_shift.pdf", plot = lifespan_shift, width = 18, height = 16, units = "cm", device = "pdf")
 ggsave("lifespan_shift.png", plot = lifespan_shift, width = 18, height = 16, units = "cm", device = "png")
+ggsave("lifespan_shift.jpg", plot = lifespan_shift, width = 18, height = 16, units = "cm", device = "jpg")
 
 lifespan_shift
 ```
@@ -1196,6 +1198,7 @@ fig_slope_ageinterval_AD <- ggplot(amostra_Coef, aes(y = estimate, x = Age_inter
 fig_slope_ageinterval_AD
 
 ggsave("fig_slope_ageinterval_AD.pdf", plot = fig_slope_ageinterval_AD, width = 18, height = 14, units = "cm", device = "pdf")
+ggsave("fig_slope_ageinterval_AD.jpg", plot = fig_slope_ageinterval_AD, width = 18, height = 14, units = "cm", device = "jpg")
 ```
 
 ### GM volume \~ Age
@@ -1803,6 +1806,7 @@ figS6_alt
 fig_age_c <- ggarrange(fig_K_age_c, ggarrange(fig_S_age_c, fig_I_age_c,labels = c("B","C"), nrow = 1, ncol = 2, font.label = list(size = 11)),labels = c("A"), nrow = 2, ncol = 1, font.label = list(size = 11), common.legend = TRUE, legend = "top")
 
 ggsave("fig_age_c.pdf", plot = fig_age_c, width = 18, height = 18, units = "cm", device = "pdf")
+ggsave("fig_age_c.jpg", plot = fig_age_c, width = 18, height = 18, units = "cm", device = "jpg")
 ```
 
 
