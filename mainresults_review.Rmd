@@ -920,17 +920,17 @@ signif(sigma.hat(m.1)$sigma$Sample,2)
 
 T_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = AvgThickness, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
-  labs(y = "T") +
-  scale_x_continuous(limits = c(0,100))
+    labs(y = "T") +
+    scale_x_continuous(limits = c(0,100))
 
 T_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = AvgThickness_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
   labs(y = "T (harmonized)") +
@@ -939,8 +939,8 @@ T_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL
 
 AT_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = TotalArea, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
   labs(y = "AT") +
@@ -949,8 +949,8 @@ AT_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CT
 
 AT_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = TotalArea_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
   labs(y = "AT (harmonized)") +
@@ -959,8 +959,8 @@ AT_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CT
 
 AE_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = ExposedArea, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+  geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
   labs(y = "AE") +
@@ -969,8 +969,8 @@ AE_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CT
 
 AE_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = ExposedArea_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
   labs(y = "AE (harmonized)") +
@@ -999,15 +999,16 @@ ggsave("AE_b.pdf", plot = AE_b, width = 18, height = 22, units = "cm", device = 
 
 K_lifespan_a <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") + geom_smooth(aes(color = Sample), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     theme_pubr() + 
     guides(alpha = "none") +
   scale_x_continuous(limits = c(0,100))
 
 K_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = K_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     guides(alpha = "none") + 
   theme_pubr() +
   labs(y = "K (harmonized)") +
@@ -1023,8 +1024,8 @@ ggsave("K_lifespan.pdf", plot = K_lifespan, width = 18, height = 22, units = "cm
 ```{r}
 S_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = S_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-  geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     guides(alpha = "none") + 
   theme_pubr() +
   labs(y = "S (harmonized)") +
@@ -1032,8 +1033,8 @@ S_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnosti
 
 I_lifespan_b <- ggplot(filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL"), aes(x = Age, y = I_shiftc, alpha = 0.4))+
     geom_point(aes(color = Sample, fill = Sample, alpha = 0.1)) +
-    geom_smooth(method = "lm", color = "black") +
-    geom_smooth(aes(color = Sample, alpha = 0.1), method = "lm") +
+    geom_smooth(method = "lm", color = "black", aes(alpha = 0.4)) +
+    geom_smooth(aes(color = Sample, fill = Sample), method = "lm", alpha = 0.4, size = 0.5) +
     guides(alpha = "none") + 
   theme_pubr() +
   labs(y = "I (harmonized)") +
