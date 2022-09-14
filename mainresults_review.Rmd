@@ -646,7 +646,7 @@ R squared (correlation):
 glance(lm(AvgThickness ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))$r.squared
 ```
 
-Linear Model - statement the harmonization is possible trhough a linear model:
+Linear Model - statement the harmonization is possible through a linear model:
 
 ```{r}
 summary(lm(AvgThickness ~ Age, data = filter(dados_datasetscomp, ROI == "hemisphere", Diagnostic == "CTL")))
